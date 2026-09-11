@@ -1,0 +1,18 @@
+/* SAYLVI global visual system */
+.app-shell { background: #f4f8fc; }
+
+.sf-card {
+  border: 1px solid #e2ebf4;
+  background: rgba(255,255,255,.96);
+  border-radius: 18px;
+  box-shadow: 0 7px 24px rgba(35, 76, 117, .055);
+}
+
+.sf-card:hover { box-shadow: 0 12px 30px rgba(35, 76, 117, .08); }
+
+.sf-scrollbar::-webkit-scrollbar { width: 7px; height: 7px; }
+.sf-scrollbar::-webkit-scrollbar-thumb { background: #c8d9e9; border-radius: 999px; }
+
+@media (max-width: 1023px) {
+  .sf-desktop-only { display: none; }
+}
