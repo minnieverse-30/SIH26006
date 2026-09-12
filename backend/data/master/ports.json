@@ -1,0 +1,102 @@
+[
+  {
+    "port_id": "PORT-001",
+    "name": "Tubarao",
+    "country": "Brazil",
+    "max_draft_m": 20,
+    "max_loa_m": 330,
+    "max_beam_m": 50,
+    "supported_vessel_types": [
+      "Capesize"
+    ]
+  },
+  {
+    "port_id": "PORT-002",
+    "name": "West Australia",
+    "country": "Australia",
+    "max_draft_m": 18,
+    "max_loa_m": 300,
+    "max_beam_m": 48,
+    "supported_vessel_types": [
+      "Capesize"
+    ]
+  },
+  {
+    "port_id": "PORT-003",
+    "name": "Santos",
+    "country": "Brazil",
+    "max_draft_m": 14.5,
+    "max_loa_m": 250,
+    "max_beam_m": 36,
+    "supported_vessel_types": [
+      "Panamax"
+    ]
+  },
+  {
+    "port_id": "PORT-004",
+    "name": "US Gulf",
+    "country": "USA",
+    "max_draft_m": 15,
+    "max_loa_m": 250,
+    "max_beam_m": 36,
+    "supported_vessel_types": [
+      "Panamax"
+    ]
+  },
+  {
+    "port_id": "PORT-005",
+    "name": "Taboneo",
+    "country": "Indonesia",
+    "max_draft_m": 15,
+    "max_loa_m": 250,
+    "max_beam_m": 36,
+    "supported_vessel_types": [
+      "Panamax"
+    ]
+  },
+  {
+    "port_id": "PORT-006",
+    "name": "Qingdao",
+    "country": "China",
+    "max_draft_m": 18,
+    "max_loa_m": 310,
+    "max_beam_m": 50,
+    "supported_vessel_types": [
+      "Capesize",
+      "Panamax"
+    ]
+  },
+  {
+    "port_id": "PORT-007",
+    "name": "Rizhao",
+    "country": "China",
+    "max_draft_m": 16,
+    "max_loa_m": 260,
+    "max_beam_m": 40,
+    "supported_vessel_types": [
+      "Panamax"
+    ]
+  },
+  {
+    "port_id": "PORT-008",
+    "name": "North China",
+    "country": "China",
+    "max_draft_m": 16,
+    "max_loa_m": 260,
+    "max_beam_m": 40,
+    "supported_vessel_types": [
+      "Panamax"
+    ]
+  },
+  {
+    "port_id": "PORT-009",
+    "name": "Vizag",
+    "country": "India",
+    "max_draft_m": 16,
+    "max_loa_m": 260,
+    "max_beam_m": 40,
+    "supported_vessel_types": [
+      "Panamax"
+    ]
+  }
+]

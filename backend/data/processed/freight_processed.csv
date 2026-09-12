@@ -1,0 +1,9 @@
+date,route,origin,destination,vessel_type,freight_rate,unit,source,source_date,source_url
+2025-04-24,C3,Tubarao,Qingdao,Capesize,19.49,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
+2025-04-24,C5,West Australia,Qingdao,Capesize,7.76,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
+2025-04-24,Santos-Rizhao,Santos,Rizhao,Panamax,35.0,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
+2025-04-24,USG-North China,US Gulf,North China,Panamax,45.9,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
+2025-04-30,C3,Tubarao,Qingdao,Capesize,19.695,$/tonne,Marex market bulletin,2025-04-30,https://new.marexmedia.com/2025/04/30/headwinds-in-global-trade/
+2025-04-30,C5,West Australia,Qingdao,Capesize,8.005,$/tonne,Marex market bulletin,2025-04-30,https://new.marexmedia.com/2025/04/30/headwinds-in-global-trade/
+2025-05-05,Taboneo-Vizag,Taboneo,Vizag,Panamax,8.25,$/tonne,ISM Freight & Chartering market report,2025-05-05,https://www.scribd.com/document/884269066/ISM-freight-2025-05-05
+2025-06-26,C5,West Australia,Qingdao,Capesize,6.88,$/tonne,Marex market bulletin,2025-06-26,https://new.marexmedia.com/2025/06/30/maritime-insider/
