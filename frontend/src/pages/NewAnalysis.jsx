@@ -1,5 +1,7 @@
 import { useState } from "react";
 import {
+  FiActivity,
+  FiAnchor,
   FiArrowRight,
   FiCheckCircle,
   FiClock,
