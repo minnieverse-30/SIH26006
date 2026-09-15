@@ -1,8 +1,8 @@
 {
     "dataset": "freight_data.csv",
     "records": {
-        "initial": 8,
-        "processed": 8,
+        "initial": 30,
+        "processed": 30,
         "removed": 0
     },
     "data_quality": {
@@ -15,23 +15,24 @@
         "invalid_units": 0
     },
     "date_range": {
-        "start": "2025-04-24",
-        "end": "2025-06-26"
+        "start": "2026-01-20",
+        "end": "2026-09-07"
     },
     "routes": [
-        "C3",
-        "C5",
-        "Santos-Rizhao",
-        "Taboneo-Vizag",
-        "USG-North China"
+        "AUS-PAR",
+        "IDN-KRI",
+        "IDN-PAR",
+        "IDN-SK-KRI",
+        "IDN-SK-PAR",
+        "ZAF-PAR"
     ],
     "vessel_types": [
-        "Capesize",
-        "Panamax"
+        "Panamax",
+        "Supramax"
     ],
     "forecasting_readiness": {
-        "records_available": 8,
-        "status": "INSUFFICIENT_HISTORICAL_DATA",
+        "records_available": 30,
+        "status": "READY_FOR_BASELINE_MODEL",
         "note": "Current dataset is suitable for pipeline validation and prototype analysis, but it is too small for reliable production forecasting."
     },
     "status": "PASSED"

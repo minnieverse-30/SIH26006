@@ -1,9 +1,31 @@
 date,route,origin,destination,vessel_type,freight_rate,unit,source,source_date,source_url
-2025-04-24,C3,Tubarao,Qingdao,Capesize,19.49,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
-2025-04-24,C5,West Australia,Qingdao,Capesize,7.76,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
-2025-04-24,Santos-Rizhao,Santos,Rizhao,Panamax,35.00,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
-2025-04-24,USG-North China,US Gulf,North China,Panamax,45.90,$/tonne,Dry Bulk Market Update / public market report,2025-04-24,https://www.scribd.com/document/856701465/Dry-Bulk-Market-Update-24-April-2025
-2025-05-05,Taboneo-Vizag,Taboneo,Vizag,Panamax,8.25,$/tonne,ISM Freight & Chartering market report,2025-05-05,https://www.scribd.com/document/884269066/ISM-freight-2025-05-05
-2025-04-30,C3,Tubarao,Qingdao,Capesize,19.695,$/tonne,Marex market bulletin,2025-04-30,https://new.marexmedia.com/2025/04/30/headwinds-in-global-trade/
-2025-04-30,C5,West Australia,Qingdao,Capesize,8.005,$/tonne,Marex market bulletin,2025-04-30,https://new.marexmedia.com/2025/04/30/headwinds-in-global-trade/
-2025-06-26,C5,West Australia,Qingdao,Capesize,6.880,$/tonne,Marex market bulletin,2025-06-26,https://new.marexmedia.com/2025/06/30/maritime-insider/
+2026-01-20,AUS-PAR,Hay Point,Paradip,Panamax,13.8,$/tonne,BigMint - India Coal Freight Rates,2026-01-20,https://www.bigmint.co/intel/detail/india-coal-freight-rates-remain-mixed-w-o-w-35565
+2026-01-20,ZAF-PAR,Richards Bay,Paradip,Panamax,13.3,$/tonne,BigMint - India Coal Freight Rates,2026-01-20,https://www.bigmint.co/intel/detail/india-coal-freight-rates-remain-mixed-w-o-w-35565
+2026-03-06,IDN-SK-PAR,South Kalimantan,Paradip,Supramax,15.2,$/tonne,S&P Global Platts Dry Freight Wire (via Scribd mirror),2026-03-06,https://www.scribd.com/document/1009938919/Dry-Freight-Wire-06-Mar-2026
+2026-03-06,IDN-SK-KRI,South Kalimantan,Krishnapatnam,Supramax,15.9,$/tonne,S&P Global Platts Dry Freight Wire (via Scribd mirror),2026-03-06,https://www.scribd.com/document/1009938919/Dry-Freight-Wire-06-Mar-2026
+2026-03-06,ZAF-PAR,Richards Bay,Paradip,Panamax,18.45,$/tonne,S&P Global Platts Dry Freight Wire (via Scribd mirror),2026-03-06,https://www.scribd.com/document/1009938919/Dry-Freight-Wire-06-Mar-2026
+2026-03-06,AUS-PAR,Hay Point,Paradip,Panamax,22.0,$/tonne,S&P Global Platts Dry Freight Wire (via Scribd mirror),2026-03-06,https://www.scribd.com/document/1009938919/Dry-Freight-Wire-06-Mar-2026
+2026-04-22,IDN-PAR,East Kalimantan,Paradip,Supramax,16.25,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-04-22,https://www.shippingtribune.com/index.php/news/shipping/Freight%2BMarket%2BScenario
+2026-04-22,AUS-PAR,Hay Point,Paradip,Panamax,21.3,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-04-22,https://www.shippingtribune.com/index.php/news/shipping/Freight%2BMarket%2BScenario
+2026-04-22,IDN-KRI,Banjarmasin,Krishnapatnam,Panamax,11.75,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-04-22,https://www.shippingtribune.com/index.php/news/shipping/Freight%2BMarket%2BScenario
+2026-04-22,ZAF-PAR,Richards Bay,Paradip,Panamax,18.55,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-04-22,https://www.shippingtribune.com/index.php/news/shipping/Freight%2BMarket%2BScenario
+2026-06-12,IDN-PAR,East Kalimantan,Paradip,Supramax,17.8,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-06-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario%2B
+2026-06-12,AUS-PAR,Hay Point,Paradip,Panamax,23.1,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-06-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario%2B
+2026-06-12,IDN-KRI,Banjarmasin,Krishnapatnam,Panamax,12.05,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-06-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario%2B
+2026-06-12,ZAF-PAR,Richards Bay,Paradip,Panamax,20.6,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-06-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario%2B
+2026-06-15,IDN-PAR,East Kalimantan,Paradip,Supramax,17.05,$/tonne,Shipping Tribune - India-Related Freight Rates Report (published Jun 16),2026-06-16,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-06-15,AUS-PAR,Hay Point,Paradip,Panamax,22.45,$/tonne,Shipping Tribune - India-Related Freight Rates Report (published Jun 16),2026-06-16,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-06-15,IDN-KRI,Banjarmasin,Krishnapatnam,Panamax,11.35,$/tonne,Shipping Tribune - India-Related Freight Rates Report (published Jun 16),2026-06-16,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-06-15,ZAF-PAR,Richards Bay,Paradip,Panamax,19.85,$/tonne,Shipping Tribune - India-Related Freight Rates Report (published Jun 16),2026-06-16,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-08-12,IDN-PAR,East Kalimantan,Paradip,Supramax,16.05,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-08-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-08-12,AUS-PAR,Hay Point,Paradip,Panamax,21.1,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-08-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-08-12,IDN-KRI,Banjarmasin,Krishnapatnam,Panamax,11.8,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-08-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-08-12,ZAF-PAR,Richards Bay,Paradip,Panamax,18.6,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-08-12,https://www.shippingtribune.com/news/shipping/Freight%2BMarket%2BScenario
+2026-09-03,IDN-PAR,East Kalimantan,Paradip,Supramax,14.15,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-03,https://www.shippingtribune.com/news/shipping/Freight%2BMarekt%2BScenario
+2026-09-03,AUS-PAR,Hay Point,Paradip,Panamax,17.05,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-03,https://www.shippingtribune.com/news/shipping/Freight%2BMarekt%2BScenario
+2026-09-03,IDN-KRI,Banjarmasin,Krishnapatnam,Panamax,8.55,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-03,https://www.shippingtribune.com/news/shipping/Freight%2BMarekt%2BScenario
+2026-09-03,ZAF-PAR,Richards Bay,Paradip,Panamax,15.95,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-03,https://www.shippingtribune.com/news/shipping/Freight%2BMarekt%2BScenario
+2026-09-07,IDN-PAR,East Kalimantan,Paradip,Supramax,16.85,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-07,https://www.shippingtribune.com/news/shipping/Market%2BScenario
+2026-09-07,AUS-PAR,Hay Point,Paradip,Panamax,23.0,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-07,https://www.shippingtribune.com/news/shipping/Market%2BScenario
+2026-09-07,IDN-KRI,Banjarmasin,Krishnapatnam,Panamax,12.35,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-07,https://www.shippingtribune.com/news/shipping/Market%2BScenario
+2026-09-07,ZAF-PAR,Richards Bay,Paradip,Panamax,20.3,$/tonne,Shipping Tribune - India-Related Freight Rates Report,2026-09-07,https://www.shippingtribune.com/news/shipping/Market%2BScenario

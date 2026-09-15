@@ -4,11 +4,9 @@ import {
   TileLayer,
   Marker,
   Popup,
-  Polyline,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
 
 // ===============================
 // Custom Vessel Icon
@@ -37,13 +35,11 @@ const vesselIcon = L.divIcon({
   popupAnchor: [0, -20],
 });
 
-
 // ===============================
 // Main Component
 // ===============================
 
 function VesselTracking() {
-
   const [vessels, setVessels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,42 +49,42 @@ function VesselTracking() {
   // ===============================
 
   const fetchVessels = async () => {
-
     try {
-
       setError("");
 
       const response = await fetch(
         "http://127.0.0.1:8000/api/vessels/tracking"
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch vessel tracking data");
-      }
-
       const result = await response.json();
 
-      setVessels(result.data);
+      console.log("VESSEL TRACKING RESPONSE:", result);
 
+      if (!response.ok) {
+        throw new Error(
+          result.detail || "Failed to fetch vessel tracking data"
+        );
+      }
+
+      setVessels(result.data || []);
     } catch (err) {
+      console.error("Vessel tracking error:", err);
 
-      setError(err.message);
+      setError(
+        err.message || "Unable to load vessel tracking data"
+      );
 
+      setVessels([]);
     } finally {
-
       setLoading(false);
-
     }
-
   };
-
 
   // ===============================
   // Initial fetch + auto refresh
   // ===============================
 
   useEffect(() => {
-
     fetchVessels();
 
     const interval = setInterval(() => {
@@ -96,19 +92,15 @@ function VesselTracking() {
     }, 30000);
 
     return () => clearInterval(interval);
-
   }, []);
-
 
   // ===============================
   // Loading
   // ===============================
 
   if (loading) {
-
     return (
       <div className="min-h-screen p-6 text-white bg-slate-950">
-
         <h1 className="text-3xl font-bold">
           Vessel Tracking
         </h1>
@@ -116,23 +108,18 @@ function VesselTracking() {
         <p className="mt-2 text-slate-400">
           Loading vessel positions...
         </p>
-
       </div>
     );
-
   }
 
-
   return (
-
     <div className="min-h-screen p-6 text-white bg-slate-950">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
 
       <div className="flex items-center justify-between mb-6">
 
         <div>
-
           <h1 className="text-3xl font-bold">
             Vessel Tracking
           </h1>
@@ -140,13 +127,11 @@ function VesselTracking() {
           <p className="mt-1 text-slate-400">
             Live vessel position monitoring and maritime route visibility
           </p>
-
         </div>
-
 
         <div className="flex items-center gap-2">
 
-          <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+          <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
 
           <span className="text-sm text-green-400">
             Tracking Active
@@ -156,12 +141,11 @@ function VesselTracking() {
 
       </div>
 
-
-      {/* ================= SIMULATION NOTICE ================= */}
+      {/* SIMULATION NOTICE */}
 
       <div className="p-4 mb-6 border bg-blue-500/10 border-blue-500/30 rounded-xl">
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
 
           <div>
 
@@ -177,7 +161,6 @@ function VesselTracking() {
 
           </div>
 
-
           <button
             onClick={fetchVessels}
             className="px-4 py-2 text-blue-300 transition border rounded-lg bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30"
@@ -189,53 +172,46 @@ function VesselTracking() {
 
       </div>
 
-
-      {/* ================= ERROR ================= */}
+      {/* ERROR */}
 
       {error && (
-
         <div className="p-4 mb-6 text-red-300 border bg-red-500/10 border-red-500/30 rounded-xl">
-
           {error}
-
         </div>
-
       )}
 
-
-      {/* ================= MAP ================= */}
+      {/* MAP */}
 
       <div className="mb-6 overflow-hidden border bg-slate-900 border-slate-800 rounded-2xl">
 
         <div className="h-[550px]">
 
           <MapContainer
-            center={[5, 105]}
+            center={[10, 75]}
             zoom={3}
             scrollWheelZoom={true}
             className="w-full h-full"
           >
 
-            {/* OpenStreetMap */}
-
             <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
+              attribution="&copy; OpenStreetMap contributors"
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-
-            {/* ================= VESSELS ================= */}
+            {/* VESSELS */}
 
             {vessels.map((vessel) => {
+
+              if (!vessel.position) {
+                return null;
+              }
 
               const position = [
                 vessel.position.latitude,
                 vessel.position.longitude,
               ];
 
-
               return (
-
                 <Marker
                   key={vessel.vessel_id}
                   position={position}
@@ -253,7 +229,6 @@ function VesselTracking() {
                       <p className="text-sm text-slate-500">
                         {vessel.vessel_id}
                       </p>
-
 
                       <div className="pt-3 mt-3 space-y-2 border-t">
 
@@ -295,12 +270,9 @@ function VesselTracking() {
 
                       </div>
 
-
                       <div className="mt-3">
 
-                        <span
-                          className="inline-block px-3 py-1 text-xs text-green-700 bg-green-100 rounded-full "
-                        >
+                        <span className="inline-block px-3 py-1 text-xs text-green-700 bg-green-100 rounded-full">
                           {vessel.status}
                         </span>
 
@@ -311,9 +283,7 @@ function VesselTracking() {
                   </Popup>
 
                 </Marker>
-
               );
-
             })}
 
           </MapContainer>
@@ -322,8 +292,7 @@ function VesselTracking() {
 
       </div>
 
-
-      {/* ================= STATS ================= */}
+      {/* STATS */}
 
       <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
 
@@ -338,7 +307,6 @@ function VesselTracking() {
           </p>
 
         </div>
-
 
         <div className="p-5 border bg-slate-900 border-slate-800 rounded-xl">
 
@@ -356,7 +324,6 @@ function VesselTracking() {
 
         </div>
 
-
         <div className="p-5 border bg-slate-900 border-slate-800 rounded-xl">
 
           <p className="text-sm text-slate-400">
@@ -373,7 +340,6 @@ function VesselTracking() {
 
         </div>
 
-
         <div className="p-5 border bg-slate-900 border-slate-800 rounded-xl">
 
           <p className="text-sm text-slate-400">
@@ -388,8 +354,7 @@ function VesselTracking() {
 
       </div>
 
-
-      {/* ================= TABLE ================= */}
+      {/* TABLE */}
 
       <div className="overflow-hidden border bg-slate-900 border-slate-800 rounded-2xl">
 
@@ -404,7 +369,6 @@ function VesselTracking() {
           </p>
 
         </div>
-
 
         <div className="overflow-x-auto">
 
@@ -446,14 +410,13 @@ function VesselTracking() {
 
             </thead>
 
-
             <tbody>
 
               {vessels.map((vessel) => (
 
                 <tr
                   key={vessel.vessel_id}
-                  className="transition border-t  border-slate-800 hover:bg-slate-800/50"
+                  className="transition border-t border-slate-800 hover:bg-slate-800/50"
                 >
 
                   <td className="p-4">
@@ -468,36 +431,27 @@ function VesselTracking() {
 
                   </td>
 
-
                   <td className="p-4 text-slate-300">
 
-                    {vessel.position.latitude.toFixed(2)}
-                    {" , "}
-                    {vessel.position.longitude.toFixed(2)}
+                    {vessel.position
+                      ? `${vessel.position.latitude.toFixed(
+                          2
+                        )} , ${vessel.position.longitude.toFixed(2)}`
+                      : "N/A"}
 
                   </td>
-
 
                   <td className="p-4 text-blue-400">
-
                     {vessel.speed_knots} kn
-
                   </td>
 
-
                   <td className="p-4">
-
                     {vessel.heading}°
-
                   </td>
-
 
                   <td className="p-4">
-
                     {vessel.destination}
-
                   </td>
-
 
                   <td className="p-4 text-slate-300">
 
@@ -509,15 +463,10 @@ function VesselTracking() {
 
                   </td>
 
-
                   <td className="p-4">
 
-                    <span
-                      className="px-3 py-1 text-xs text-green-400 border rounded-full  bg-green-500/10 border-green-500/20"
-                    >
-
+                    <span className="px-3 py-1 text-xs text-green-400 border rounded-full bg-green-500/10 border-green-500/20">
                       {vessel.status}
-
                     </span>
 
                   </td>
@@ -525,6 +474,21 @@ function VesselTracking() {
                 </tr>
 
               ))}
+
+              {!error && vessels.length === 0 && (
+
+                <tr>
+
+                  <td
+                    colSpan="7"
+                    className="p-10 text-center text-slate-500"
+                  >
+                    No vessel tracking data available.
+                  </td>
+
+                </tr>
+
+              )}
 
             </tbody>
 
@@ -535,9 +499,7 @@ function VesselTracking() {
       </div>
 
     </div>
-
   );
-
 }
 
 export default VesselTracking;

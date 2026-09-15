@@ -1,808 +1,481 @@
 import { useEffect, useState } from "react";
-
 import {
-  FiTrendingUp,
-  FiCalendar,
-  FiInfo,
-  FiArrowUp,
+  FiAlertCircle,
   FiArrowDown,
-  FiActivity,
-  FiRefreshCw,
+  FiArrowUp,
+  FiBarChart2,
+  FiCheckCircle,
+  FiLoader,
+  FiMinus,
+  FiTrendingUp,
 } from "react-icons/fi";
-
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
 } from "recharts";
 
 function Forecast() {
-  // ==============================
-  // ROUTE
-  // ==============================
-
-  const route = "C5";
-
-  // ==============================
-  // STATE
-  // ==============================
-
+  const [route, setRoute] = useState("AUS-PAR");
   const [forecast, setForecast] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ==============================
-  // FETCH FORECAST
-  // ==============================
-
-  useEffect(() => {
-    fetchForecast();
-  }, []);
-
-  const fetchForecast = async () => {
+  const fetchForecast = async (selectedRoute) => {
     try {
       setLoading(true);
       setError("");
 
       const response = await fetch(
         `http://127.0.0.1:8000/api/forecast?route=${encodeURIComponent(
-          route
+          selectedRoute
         )}`
       );
 
       const data = await response.json();
 
+      console.log("FORECAST API RESPONSE:", data);
+
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to load forecast");
+        throw new Error(data.detail || "Unable to fetch forecast.");
       }
 
-      setForecast(data.data);
+      const forecastData = data.data;
+
+      const normalizedForecast = {
+        route: forecastData.route,
+        latest_freight_rate: forecastData.latest_freight_rate,
+        forecast_freight_rate: forecastData.forecast_freight_rate,
+        forecast_lower_bound: forecastData.forecast_range?.lower,
+        forecast_upper_bound: forecastData.forecast_range?.upper,
+        trend: forecastData.trend,
+        confidence: forecastData.confidence,
+        volatility: forecastData.volatility,
+        observations: forecastData.historical_observations,
+        unit: forecastData.unit,
+        model_status: forecastData.model_status,
+        method: forecastData.method,
+      };
+
+      setForecast(normalizedForecast);
     } catch (err) {
-      setError(err.message || "Unable to load forecast");
+      console.error("Forecast error:", err);
+
+      setError(err.message || "Unable to connect to forecast service.");
+      setForecast(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // ==============================
-  // HELPERS
-  // ==============================
+  useEffect(() => {
+    fetchForecast("AUS-PAR");
+  }, []);
 
-  const formatRate = (value) => {
-    if (value === undefined || value === null) {
-      return "--";
+  const latestRate = Number(forecast?.latest_freight_rate);
+  const forecastRate = Number(forecast?.forecast_freight_rate);
+  const lowerBound = Number(forecast?.forecast_lower_bound);
+  const upperBound = Number(forecast?.forecast_upper_bound);
+  const volatility = Number(forecast?.volatility);
+
+  const getTrendIcon = () => {
+    if (!forecast) return <FiMinus />;
+
+    if (forecast.trend === "RISING") {
+      return <FiArrowUp />;
     }
 
-    return `$${Number(value).toFixed(2)}`;
+    if (forecast.trend === "FALLING") {
+      return <FiArrowDown />;
+    }
+
+    return <FiMinus />;
   };
 
-  const formatNumber = (value) => {
-    if (value === undefined || value === null) {
-      return "--";
+  const getTrendText = () => {
+    if (!forecast) return "No data";
+
+    if (forecast.trend === "RISING") {
+      return "Freight rates are expected to rise";
     }
 
-    return Number(value).toLocaleString();
+    if (forecast.trend === "FALLING") {
+      return "Freight rates are expected to fall";
+    }
+
+    if (forecast.trend === "STABLE") {
+      return "Freight rates are relatively stable";
+    }
+
+    return "Insufficient historical data";
   };
 
-  const getTrendColor = (trend) => {
-    if (trend === "RISING") {
-      return "text-red-600";
-    }
-
-    if (trend === "FALLING") {
-      return "text-green-600";
-    }
-
-    return "text-slate-600";
-  };
-
-  const getTrendBackground = (trend) => {
-    if (trend === "RISING") {
-      return "border-red-200 bg-red-50";
-    }
-
-    if (trend === "FALLING") {
-      return "border-green-200 bg-green-50";
-    }
-
-    return "border-slate-200 bg-slate-50";
-  };
-
-  const getConfidenceColor = (confidence) => {
-    if (confidence === "HIGH") {
-      return "text-green-600";
-    }
-
-    if (confidence === "MEDIUM") {
-      return "text-amber-600";
-    }
-
-    return "text-red-600";
-  };
-
-  // ==============================
-  // CHART DATA
-  // ==============================
-
-  const chartData = forecast
-    ? [
-        {
-          label: "Latest",
-          actual: forecast.latest_freight_rate,
-          forecast: forecast.latest_freight_rate,
-        },
-        {
-          label: "Forecast",
-          actual: null,
-          forecast: forecast.forecast_freight_rate,
-        },
-      ]
-    : [];
-
-  // ==============================
-  // RENDER
-  // ==============================
+  const chartData =
+    forecast &&
+    Number.isFinite(latestRate) &&
+    Number.isFinite(forecastRate)
+      ? [
+          {
+            period: "Latest",
+            rate: latestRate,
+          },
+          {
+            period: "Forecast",
+            rate: forecastRate,
+          },
+        ]
+      : [];
 
   return (
-    <div className="min-h-screen p-8 bg-slate-100">
-
-      {/* ================= HEADER ================= */}
-
-      <div className="flex flex-col justify-between gap-4 mb-8 lg:flex-row lg:items-center">
-
-        <div>
-
-          <div className="flex items-center gap-3">
-
-            <div className="flex items-center justify-center text-white bg-blue-600 h-11 w-11 rounded-xl">
-              <FiTrendingUp size={22} />
-            </div>
-
-            <div>
-
-              <h1 className="text-2xl font-bold text-slate-800">
-                Freight Forecast
-              </h1>
-
-              <p className="text-sm text-slate-500">
-                Freight rate outlook generated from historical route data
-              </p>
-
-            </div>
-
+    <div className="space-y-6">
+      {/* HEADER */}
+      <div>
+        <div className="flex items-center gap-3">
+          <div className="p-3 text-blue-400 rounded-xl bg-blue-500/10">
+            <FiBarChart2 size={24} />
           </div>
 
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              Freight Forecast
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-400">
+              Historical freight analysis and short-term rate forecast
+            </p>
+          </div>
         </div>
-
-
-        <div className="px-4 py-3 bg-white border rounded-lg border-slate-200">
-
-          <p className="text-xs text-slate-500">
-            Analysis ID
-          </p>
-
-          <p className="mt-1 text-sm font-semibold text-slate-800">
-            ANL-1024
-          </p>
-
-        </div>
-
       </div>
 
+      {/* ROUTE SELECTOR */}
+      <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex-1">
+            <label className="block mb-2 text-sm font-medium text-slate-300">
+              Select Route
+            </label>
 
-      {/* ================= ERROR ================= */}
+            <select
+              value={route}
+              onChange={(e) => {
+                const selectedRoute = e.target.value;
 
-      {error && (
+                setRoute(selectedRoute);
+                fetchForecast(selectedRoute);
+              }}
+              className="w-full px-4 py-3 text-white border outline-none rounded-xl border-slate-700 bg-slate-950 focus:border-blue-500"
+            >
+              <option value="AUS-PAR">
+                Hay Point → Paradip
+              </option>
 
-        <div className="flex items-center justify-between gap-4 p-4 mb-6 border border-red-200 rounded-xl bg-red-50">
+              <option value="ZAF-PAR">
+                Richards Bay → Paradip
+              </option>
 
-          <div>
+              <option value="IDN-PAR">
+                South Kalimantan → Paradip
+              </option>
 
-            <p className="font-semibold text-red-700">
-              Unable to load forecast
-            </p>
+              <option value="IDN-SK-PAR">
+                South Kalimantan → Paradip
+              </option>
 
-            <p className="mt-1 text-sm text-red-600">
-              {error}
-            </p>
-
+              <option value="IDN-KRI">
+                East Kalimantan → Krishnapatnam
+              </option>
+            </select>
           </div>
 
           <button
-            onClick={fetchForecast}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
+            onClick={() => fetchForecast(route)}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-xl hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <FiRefreshCw size={15} />
-            Retry
+            {loading ? (
+              <>
+                <FiLoader className="animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <FiTrendingUp />
+                Refresh Forecast
+              </>
+            )}
           </button>
-
         </div>
+      </div>
 
-      )}
+      {/* ERROR */}
+      {error && (
+        <div className="flex items-start gap-3 p-4 text-red-300 border rounded-2xl border-red-500/30 bg-red-500/10">
+          <FiAlertCircle className="mt-0.5 shrink-0" />
 
+          <div>
+            <p className="font-medium">
+              Forecast service unavailable
+            </p>
 
-      {/* ================= LOADING ================= */}
-
-      {loading && (
-
-        <div className="p-5 mb-6 border border-blue-200 rounded-xl bg-blue-50">
-
-          <div className="flex items-center gap-3">
-
-            <FiRefreshCw
-              size={22}
-              className="text-blue-600 animate-spin"
-            />
-
-            <div>
-
-              <p className="font-semibold text-blue-800">
-                Generating freight forecast...
-              </p>
-
-              <p className="mt-1 text-sm text-blue-600">
-                Reading historical freight data for route {route}.
-              </p>
-
-            </div>
-
+            <p className="mt-1 text-sm">
+              {error}
+            </p>
           </div>
-
         </div>
-
       )}
 
+      {/* LOADING */}
+      {loading && !forecast && (
+        <div className="flex items-center justify-center py-20 border rounded-2xl border-slate-800 bg-slate-900">
+          <div className="flex items-center gap-3 text-slate-400">
+            <FiLoader className="animate-spin" />
+            Loading forecast...
+          </div>
+        </div>
+      )}
 
-      {/* ================= CONTENT ================= */}
-
-      {!loading && forecast && (
-
+      {/* FORECAST DATA */}
+      {forecast && (
         <>
-
-          {/* ================= ROUTE SUMMARY ================= */}
-
-          <div className="p-5 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
-
-              <div>
-
-                <p className="text-xs tracking-wide uppercase text-slate-500">
-                  Route
-                </p>
-
-                <p className="mt-1 font-semibold text-slate-800">
-                  {forecast.route}
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Freight corridor
-                </p>
-
-              </div>
-
-
-              <div>
-
-                <p className="text-xs tracking-wide uppercase text-slate-500">
-                  Latest Observation
-                </p>
-
-                <p className="flex items-center gap-2 mt-1 font-semibold text-slate-800">
-
-                  <FiCalendar size={15} />
-
-                  {forecast.latest_date || "--"}
-
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Latest available freight data
-                </p>
-
-              </div>
-
-
-              <div>
-
-                <p className="text-xs tracking-wide uppercase text-slate-500">
-                  Historical Observations
-                </p>
-
-                <p className="mt-1 font-semibold text-slate-800">
-                  {formatNumber(forecast.historical_observations)}
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  records used
-                </p>
-
-              </div>
-
-
-              <div>
-
-                <p className="text-xs tracking-wide uppercase text-slate-500">
-                  Model Status
-                </p>
-
-                <p className="mt-1 font-semibold text-slate-800">
-                  {forecast.model_status || "BASELINE"}
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  {forecast.method || "Historical baseline"}
-                </p>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* ================= KPI CARDS ================= */}
-
-          <div className="grid grid-cols-1 gap-5 mb-6 md:grid-cols-2 lg:grid-cols-4">
-
-            {/* Latest Freight */}
-
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
-
-              <p className="text-sm text-slate-500">
-                Latest Freight
+          {/* KPI CARDS */}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {/* Latest Rate */}
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">
+                Latest Freight Rate
               </p>
 
-              <div className="flex items-end gap-2 mt-2">
-
-                <h2 className="text-2xl font-bold text-slate-800">
-                  {formatRate(forecast.latest_freight_rate)}
-                </h2>
-
-                <span className="mb-1 text-sm text-slate-500">
-                  / MT
-                </span>
-
-              </div>
-
-              <p className="mt-2 text-xs text-slate-500">
-                Latest observed route rate
+              <p className="mt-2 text-2xl font-bold text-white">
+                {Number.isFinite(latestRate)
+                  ? `$${latestRate.toFixed(2)}`
+                  : "--"}
               </p>
 
+              <p className="mt-1 text-xs text-slate-500">
+                {forecast.unit}
+              </p>
             </div>
-
 
             {/* Forecast Rate */}
-
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
-
-              <p className="text-sm text-slate-500">
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">
                 Forecast Rate
               </p>
 
-              <div className="flex items-end gap-2 mt-2">
+              <p className="mt-2 text-2xl font-bold text-blue-400">
+                {Number.isFinite(forecastRate)
+                  ? `$${forecastRate.toFixed(2)}`
+                  : "--"}
+              </p>
 
-                <h2 className="text-2xl font-bold text-slate-800">
-                  {formatRate(forecast.forecast_freight_rate)}
-                </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Expected short-term rate
+              </p>
+            </div>
 
-                <span className="mb-1 text-sm text-slate-500">
-                  / MT
+            {/* Trend */}
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">
+                Trend
+              </p>
+
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-2xl text-white">
+                  {getTrendIcon()}
                 </span>
 
+                <span className="text-xl font-bold text-white">
+                  {forecast.trend}
+                </span>
               </div>
 
-              <p
-                className={`mt-2 flex items-center gap-1 text-xs font-medium ${getTrendColor(
-                  forecast.trend
-                )}`}
-              >
-
-                {forecast.trend === "RISING" && (
-                  <FiArrowUp size={13} />
-                )}
-
-                {forecast.trend === "FALLING" && (
-                  <FiArrowDown size={13} />
-                )}
-
-                {forecast.trend || "STABLE"}
-
+              <p className="mt-1 text-xs text-slate-500">
+                Market direction
               </p>
-
             </div>
-
-
-            {/* Forecast Range */}
-
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
-
-              <p className="text-sm text-slate-500">
-                Forecast Range
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-slate-800">
-
-                {forecast.forecast_range
-                  ? `${formatRate(
-                      forecast.forecast_range.lower
-                    )} – ${formatRate(
-                      forecast.forecast_range.upper
-                    )}`
-                  : "--"}
-
-              </h2>
-
-              <p className="mt-2 text-xs text-slate-500">
-                Estimated rate range
-              </p>
-
-            </div>
-
 
             {/* Confidence */}
-
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
-
-              <p className="text-sm text-slate-500">
-                Model Confidence
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">
+                Confidence
               </p>
 
-              <h2
-                className={`mt-2 text-2xl font-bold ${getConfidenceColor(
-                  forecast.confidence
-                )}`}
-              >
-                {forecast.confidence || "--"}
-              </h2>
+              <div className="flex items-center gap-2 mt-2">
+                <FiCheckCircle className="text-emerald-400" />
 
-              <p className="mt-2 text-xs text-slate-500">
-                Based on available historical observations
+                <span className="text-xl font-bold text-white">
+                  {forecast.confidence}
+                </span>
+              </div>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Based on historical observations
               </p>
-
             </div>
-
           </div>
 
-
-          {/* ================= CHART + OUTLOOK ================= */}
-
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-
+          {/* CHART + INTELLIGENCE */}
+          <div className="grid gap-6 xl:grid-cols-3">
             {/* CHART */}
+            <div className="p-6 border rounded-2xl border-slate-800 bg-slate-900 xl:col-span-2">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-white">
+                  Freight Rate Outlook
+                </h2>
 
-            <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200 xl:col-span-2">
-
-              <div className="flex items-center justify-between mb-6">
-
-                <div>
-
-                  <h2 className="text-lg font-semibold text-slate-800">
-                    Freight Rate Forecast
-                  </h2>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Latest observed rate versus current forecast
-                  </p>
-
-                </div>
-
-                <div className="flex items-center gap-4 text-xs text-slate-500">
-
-                  <div className="flex items-center gap-2">
-
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
-
-                    Latest
-
-                  </div>
-
-                  <div className="flex items-center gap-2">
-
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-
-                    Forecast
-
-                  </div>
-
-                </div>
-
+                <p className="mt-1 text-sm text-slate-400">
+                  {forecast.route} · Latest vs forecast
+                </p>
               </div>
 
+              {chartData.length > 0 ? (
+                <div className="h-80">
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                  >
+                    <LineChart data={chartData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#1e293b"
+                      />
 
-              <div className="h-80">
+                      <XAxis
+                        dataKey="period"
+                        stroke="#64748b"
+                        tick={{ fill: "#94a3b8" }}
+                      />
 
-                <ResponsiveContainer width="100%" height="100%">
+                      <YAxis
+                        stroke="#64748b"
+                        tick={{ fill: "#94a3b8" }}
+                      />
 
-                  <AreaChart data={chartData}>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#020617",
+                          border: "1px solid #334155",
+                          borderRadius: "12px",
+                          color: "#fff",
+                        }}
+                        formatter={(value) => [
+                          `$${Number(value).toFixed(2)}`,
+                          "Freight Rate",
+                        ]}
+                      />
 
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                    />
-
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-
-                    <YAxis
-                      tick={{ fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `$${value}`}
-                    />
-
-                    <Tooltip
-                      formatter={(value) => [
-                        `$${Number(value).toFixed(2)}/MT`,
-                        "Freight",
-                      ]}
-                    />
-
-                    <Area
-                      type="monotone"
-                      dataKey="actual"
-                      stroke="#64748b"
-                      fill="#e2e8f0"
-                      strokeWidth={2}
-                    />
-
-                    <Area
-                      type="monotone"
-                      dataKey="forecast"
-                      stroke="#2563eb"
-                      fill="#dbeafe"
-                      strokeWidth={2}
-                    />
-
-                  </AreaChart>
-
-                </ResponsiveContainer>
-
-              </div>
-
+                      <Line
+                        type="monotone"
+                        dataKey="rate"
+                        strokeWidth={3}
+                        dot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-80 text-slate-500">
+                  Forecast chart data unavailable
+                </div>
+              )}
             </div>
 
+            {/* INTELLIGENCE */}
+            <div className="p-6 border rounded-2xl border-slate-800 bg-slate-900">
+              <h2 className="text-lg font-semibold text-white">
+                Forecast Intelligence
+              </h2>
 
-            {/* MARKET OUTLOOK */}
+              <div className="mt-6 space-y-5">
+                <div>
+                  <p className="text-xs tracking-wider uppercase text-slate-500">
+                    Market Signal
+                  </p>
 
-            <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200">
+                  <div className="flex items-center gap-2 mt-2 text-white">
+                    <span className="text-xl">
+                      {getTrendIcon()}
+                    </span>
 
-              <div className="flex items-center gap-3">
-
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg ${getTrendBackground(
-                    forecast.trend
-                  )}`}
-                >
-
-                  <FiActivity
-                    size={20}
-                    className={getTrendColor(forecast.trend)}
-                  />
-
+                    <span className="font-semibold">
+                      {getTrendText()}
+                    </span>
+                  </div>
                 </div>
 
                 <div>
-
-                  <h2 className="font-semibold text-slate-800">
-                    Market Outlook
-                  </h2>
-
-                  <p className="text-xs text-slate-500">
-                    Forecast interpretation
+                  <p className="text-xs tracking-wider uppercase text-slate-500">
+                    Forecast Range
                   </p>
 
+                  <p className="mt-2 text-xl font-bold text-white">
+                    {Number.isFinite(lowerBound)
+                      ? `$${lowerBound.toFixed(2)}`
+                      : "--"}
+                    {" – "}
+                    {Number.isFinite(upperBound)
+                      ? `$${upperBound.toFixed(2)}`
+                      : "--"}
+                  </p>
                 </div>
 
-              </div>
-
-
-              <div
-                className={`mt-6 rounded-lg border p-4 ${getTrendBackground(
-                  forecast.trend
-                )}`}
-              >
-
-                <p
-                  className={`text-sm font-semibold ${getTrendColor(
-                    forecast.trend
-                  )}`}
-                >
-
-                  {forecast.trend === "RISING"
-                    ? "Rising Freight Trend"
-                    : forecast.trend === "FALLING"
-                    ? "Falling Freight Trend"
-                    : "Stable Freight Trend"}
-
-                </p>
-
-
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-
-                  {forecast.trend === "RISING"
-                    ? "Freight rates are showing an upward movement based on the available historical observations."
-                    : forecast.trend === "FALLING"
-                    ? "Freight rates are showing a downward movement based on the available historical observations."
-                    : "Freight rates are relatively stable based on the available historical observations."}
-
-                </p>
-
-              </div>
-
-
-              <div className="mt-5 space-y-4">
-
                 <div>
-
-                  <p className="text-xs font-medium tracking-wide uppercase text-slate-500">
-                    Current Trend
-                  </p>
-
-                  <p
-                    className={`mt-1 text-sm font-semibold ${getTrendColor(
-                      forecast.trend
-                    )}`}
-                  >
-                    {forecast.trend || "--"}
-                  </p>
-
-                </div>
-
-
-                <div>
-
-                  <p className="text-xs font-medium tracking-wide uppercase text-slate-500">
+                  <p className="text-xs tracking-wider uppercase text-slate-500">
                     Volatility
                   </p>
 
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-
-                    {forecast.volatility !== undefined &&
-                    forecast.volatility !== null
-                      ? `$${Number(
-                          forecast.volatility
-                        ).toFixed(2)} / MT`
+                  <p className="mt-2 text-xl font-bold text-white">
+                    {Number.isFinite(volatility)
+                      ? volatility.toFixed(2)
                       : "--"}
-
                   </p>
-
                 </div>
-
 
                 <div>
-
-                  <p className="text-xs font-medium tracking-wide uppercase text-slate-500">
-                    Forecast Confidence
+                  <p className="text-xs tracking-wider uppercase text-slate-500">
+                    Historical Observations
                   </p>
 
-                  <p
-                    className={`mt-1 text-sm font-semibold ${getConfidenceColor(
-                      forecast.confidence
-                    )}`}
-                  >
-                    {forecast.confidence || "--"}
+                  <p className="mt-2 text-xl font-bold text-white">
+                    {forecast.observations || "--"}
                   </p>
-
                 </div>
-
-
-                <div>
-
-                  <p className="text-xs font-medium tracking-wide uppercase text-slate-500">
-                    Forecast Method
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {forecast.method || "Weighted historical baseline"}
-                  </p>
-
-                </div>
-
               </div>
-
             </div>
-
           </div>
 
-
-          {/* ================= MODEL INFORMATION ================= */}
-
-          <div className="p-5 mt-6 bg-white border shadow-sm rounded-xl border-slate-200">
-
+          {/* MODEL STATUS */}
+          <div className="p-5 border rounded-2xl border-blue-500/20 bg-blue-500/5">
             <div className="flex items-start gap-3">
-
-              <FiInfo
-                className="mt-0.5 text-blue-600"
-                size={18}
-              />
+              <FiBarChart2 className="mt-1 text-blue-400" />
 
               <div>
-
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Forecast Methodology
-                </h3>
-
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-
-                  {forecast.note ||
-                    "Forecast results are generated using historical freight observations. The forecast is an analytical estimate and should be evaluated alongside vessel, port, cost and operational constraints."}
-
+                <p className="font-semibold text-white">
+                  Forecast Model Status
                 </p>
 
+                <p className="mt-1 text-sm text-slate-400">
+                  {forecast.model_status}
+                </p>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Method: {forecast.method}
+                </p>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  This prototype uses historical freight observations
+                  to generate a short-term rate estimate and market
+                  direction.
+                </p>
               </div>
-
             </div>
-
           </div>
-
-
-          {/* ================= DATA LIMITATION ================= */}
-
-          {forecast.confidence === "LOW" && (
-
-            <div className="p-5 mt-6 border rounded-xl border-amber-200 bg-amber-50">
-
-              <div className="flex items-start gap-3">
-
-                <FiInfo
-                  className="mt-0.5 text-amber-600"
-                  size={18}
-                />
-
-                <div>
-
-                  <h3 className="text-sm font-semibold text-amber-800">
-                    Limited Historical Data
-                  </h3>
-
-                  <p className="mt-1 text-sm leading-6 text-amber-700">
-
-                    The current route has a limited number of historical
-                    observations. The system therefore uses a baseline
-                    historical method and reports LOW confidence rather
-                    than claiming high predictive accuracy.
-
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          )}
-
-
-          {/* ================= BOTTOM ACTION ================= */}
-
-          <div className="flex justify-end mt-6">
-
-            <button
-              onClick={() => {
-                window.location.href = "/vessel-match";
-              }}
-              className="px-6 py-3 text-sm font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-            >
-              Continue to Vessel Match →
-            </button>
-
-          </div>
-
         </>
-
       )}
-
     </div>
   );
 }

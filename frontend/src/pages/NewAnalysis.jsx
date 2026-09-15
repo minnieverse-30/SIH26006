@@ -1,7 +1,5 @@
 import { useState } from "react";
 import {
-  FiActivity,
-  FiAnchor,
   FiArrowRight,
   FiCheckCircle,
   FiClock,
@@ -12,30 +10,39 @@ import {
   FiTrendingUp,
   FiXCircle,
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 function NewAnalysis() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
-    route: "C5",
+    route: "AUS-PAR",
     cargoQuantity: 100000,
-    origin: "Tubarao",
-    destination: "Qingdao",
-    fuelCost: 0,
-    portCost: 0,
-    idleCost: 0,
-    riskCost: 0,
-    portDelayDays: 0,
-    vesselAvailability: "AVAILABLE",
+
+    origin: "Hay Point",
+    destination: "Paradip",
+
+    fuelCost: 500000,
+    portCost: 150000,
+    idleCost: 100000,
+    riskCost: 200000,
+
+    portDelayDays: 2,
+
+    vesselAvailability: "HIGH",
     contractFlexibility: "FLEXIBLE",
   });
 
-  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const updateField = (field, value) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setForm((prev) => ({
       ...prev,
-      [field]: value,
+      [name]: value,
     }));
   };
 
@@ -45,832 +52,819 @@ function NewAnalysis() {
       setError("");
       setResult(null);
 
+      // -----------------------------
+      // FRONTEND VALIDATION
+      // -----------------------------
+
       if (Number(form.cargoQuantity) <= 0) {
         throw new Error("Cargo quantity must be greater than zero.");
       }
 
+      if (Number(form.portDelayDays) < 0) {
+        throw new Error("Port delay cannot be negative.");
+      }
+
+      // -----------------------------
+      // CREATE QUERY PARAMETERS
+      // -----------------------------
+
       const params = new URLSearchParams({
         route: form.route,
         cargo_quantity: Number(form.cargoQuantity),
+
         origin: form.origin,
         destination: form.destination,
+
         fuel_cost: Number(form.fuelCost),
         port_cost: Number(form.portCost),
         idle_cost: Number(form.idleCost),
         risk_cost: Number(form.riskCost),
+
         port_delay_days: Number(form.portDelayDays),
+
         vessel_availability: form.vesselAvailability,
         contract_flexibility: form.contractFlexibility,
       });
 
+      // -----------------------------
+      // SAVE ANALYSIS
+      // FastAPI -> PostgreSQL
+      // -----------------------------
+
       const response = await fetch(
-        `http://127.0.0.1:8000/api/decision?${params.toString()}`
+        `http://127.0.0.1:8000/api/analyses?${params.toString()}`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+          },
+        }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.detail || "Unable to generate chartering analysis."
+          data.detail || "Unable to save chartering analysis."
         );
       }
 
-      setResult(data.data);
+      // -----------------------------
+      // GET RESPONSE DATA
+      // -----------------------------
+
+      const analysisId = data.analysis_id;
+      const analysisResult = data.data;
+
+      console.log("Analysis saved successfully.");
+      console.log("Analysis ID:", analysisId);
+
+      setResult(analysisResult);
+
+      // -----------------------------
+      // STORE ONLY ANALYSIS ID
+      // Actual data is in PostgreSQL
+      // -----------------------------
+
+      sessionStorage.setItem(
+        "sailForgeAnalysisId",
+        String(analysisId)
+      );
     } catch (err) {
       console.error("ANALYSIS ERROR:", err);
 
       setError(
-        err.message || "Unable to connect to SAIL-FORGE backend."
+        err.message ||
+          "Unable to connect to SAIL-FORGE backend."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (value) => {
-    if (value === undefined || value === null) {
-      return "--";
-    }
-
-    return `$${Number(value).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const openDashboard = () => {
+    navigate("/");
   };
-
-  const getDecisionConfig = (decision) => {
-    if (decision === "BOOK") {
-      return {
-        label: "BOOK NOW",
-        bg: "bg-green-50",
-        border: "border-green-200",
-        text: "text-green-700",
-        icon: FiCheckCircle,
-      };
-    }
-
-    if (decision === "WAIT") {
-      return {
-        label: "WAIT",
-        bg: "bg-amber-50",
-        border: "border-amber-200",
-        text: "text-amber-700",
-        icon: FiClock,
-      };
-    }
-
-    return {
-      label: "AVOID",
-      bg: "bg-red-50",
-      border: "border-red-200",
-      text: "text-red-700",
-      icon: FiXCircle,
-    };
-  };
-
-  const decisionConfig = result
-    ? getDecisionConfig(result.decision)
-    : null;
-
-  const DecisionIcon = decisionConfig?.icon;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
 
       {/* =====================================================
           HEADER
       ===================================================== */}
 
       <div>
+        <div className="flex items-center gap-2 mb-2 text-sm text-slate-400">
+          <span>Chartering</span>
+          <FiArrowRight />
+          <span className="text-cyan-400">New Analysis</span>
+        </div>
 
-        <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase">
-          SAIL-FORGE
-        </p>
-
-        <h1 className="mt-1 text-2xl font-bold text-slate-800">
+        <h1 className="text-3xl font-bold text-white">
           New Chartering Analysis
         </h1>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Configure cargo and route parameters to generate a procurement
-          decision.
+        <p className="mt-2 text-slate-400">
+          Configure cargo, route, cost and operational parameters
+          to generate an intelligent chartering recommendation.
         </p>
-
       </div>
 
-
       {/* =====================================================
-          INPUT + PIPELINE
+          MAIN FORM
       ===================================================== */}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-        {/* =================================================
-            FORM
-        ================================================= */}
+        {/* ===================================================
+            LEFT SIDE - INPUT FORM
+        =================================================== */}
 
-        <div className="p-6 bg-white border shadow-sm xl:col-span-2 rounded-xl border-slate-200">
+        <div className="space-y-6 xl:col-span-2">
 
-          {/* Cargo & Route */}
+          {/* ROUTE & CARGO */}
 
-          <div>
+          <div className="p-6 bg-white shadow-xl rounded-2xl">
 
-            <div className="mb-5">
-              <h2 className="font-semibold text-slate-800">
-                Cargo & Route
-              </h2>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-100">
+                <FiArrowRight className="text-xl text-cyan-600" />
+              </div>
 
-              <p className="mt-1 text-xs text-slate-500">
-                Define the commercial movement to be evaluated.
-              </p>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Route & Cargo
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Define the cargo movement for this charter.
+                </p>
+              </div>
             </div>
-
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-              {/* Route */}
+              {/* ROUTE */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Freight Route
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Trade Route
                 </label>
 
                 <select
+                  name="route"
                   value={form.route}
-                  onChange={(e) =>
-                    updateField("route", e.target.value)
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
-                  <option value="C5">C5</option>
-                  <option value="C3">C3</option>
-                  <option value="Santos-Rizhao">
-                    Santos-Rizhao
+                  <option value="AUS-PAR">
+                    AUS-PAR — Australia → Paradip
                   </option>
-                  <option value="USG-North China">
-                    USG-North China
+
+                  <option value="ZAF-PAR">
+                    ZAF-PAR — South Africa → Paradip
                   </option>
-                  <option value="Taboneo-Vizag">
-                    Taboneo-Vizag
+
+                  <option value="IDN-PAR">
+                    IDN-PAR — Indonesia → Paradip
+                  </option>
+
+                  <option value="IDN-KRI">
+                    IDN-KRI — Indonesia → Kamarajar
                   </option>
                 </select>
               </div>
 
-
-              {/* Cargo */}
+              {/* CARGO */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Cargo Quantity (MT)
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Cargo Quantity (tonnes)
                 </label>
 
                 <input
                   type="number"
-                  min="1"
+                  name="cargoQuantity"
                   value={form.cargoQuantity}
-                  onChange={(e) =>
-                    updateField(
-                      "cargoQuantity",
-                      e.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  onChange={handleChange}
+                  min="1"
+                  className="w-full px-4 py-3 border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
 
-
-              {/* Origin */}
+              {/* ORIGIN */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Origin Port
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Loading Port
                 </label>
 
                 <select
+                  name="origin"
                   value={form.origin}
-                  onChange={(e) =>
-                    updateField("origin", e.target.value)
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
-                  <option value="Tubarao">Tubarao</option>
-                  <option value="West Australia">
-                    West Australia
+                  <option value="Hay Point">
+                    Hay Point, Australia
                   </option>
-                  <option value="Santos">Santos</option>
-                  <option value="US Gulf">US Gulf</option>
-                  <option value="Taboneo">Taboneo</option>
+
+                  <option value="Richards Bay">
+                    Richards Bay, South Africa
+                  </option>
+
+                  <option value="South Kalimantan">
+                    South Kalimantan, Indonesia
+                  </option>
+
+                  <option value="East Kalimantan">
+                    East Kalimantan, Indonesia
+                  </option>
+
+                  <option value="Banjarmasin">
+                    Banjarmasin, Indonesia
+                  </option>
                 </select>
               </div>
 
-
-              {/* Destination */}
+              {/* DESTINATION */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Destination Port
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Discharge Port
                 </label>
 
                 <select
+                  name="destination"
                   value={form.destination}
-                  onChange={(e) =>
-                    updateField(
-                      "destination",
-                      e.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
-                  <option value="Qingdao">Qingdao</option>
-                  <option value="Rizhao">Rizhao</option>
-                  <option value="North China">
-                    North China
+                  <option value="Paradip">Paradip</option>
+                  <option value="Dhamra">Dhamra</option>
+                  <option value="Visakhapatnam">
+                    Visakhapatnam
                   </option>
-                  <option value="Vizag">Vizag</option>
+                  <option value="Gangavaram">
+                    Gangavaram
+                  </option>
+                  <option value="Kamarajar">
+                    Kamarajar
+                  </option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Haldia">Haldia</option>
                 </select>
               </div>
-
             </div>
-
           </div>
 
+          {/* =================================================
+              COST PARAMETERS
+          ================================================= */}
 
-          {/* Divider */}
+          <div className="p-6 bg-white shadow-xl rounded-2xl">
 
-          <div className="border-t my-7 border-slate-100" />
+            <div className="flex items-center gap-3 mb-6">
 
-
-          {/* Charter Parameters */}
-
-          <div>
-
-            <div className="mb-5">
-              <h2 className="font-semibold text-slate-800">
-                Charter Parameters
-              </h2>
-
-              <p className="mt-1 text-xs text-slate-500">
-                Operational conditions used by the risk and decision engines.
-              </p>
-            </div>
-
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-
-              {/* Vessel */}
-
-              <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Vessel Availability
-                </label>
-
-                <select
-                  value={form.vesselAvailability}
-                  onChange={(e) =>
-                    updateField(
-                      "vesselAvailability",
-                      e.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="AVAILABLE">
-                    Available
-                  </option>
-
-                  <option value="UNAVAILABLE">
-                    Unavailable
-                  </option>
-                </select>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100">
+                <FiDollarSign className="text-xl text-emerald-600" />
               </div>
 
-
-              {/* Contract */}
-
               <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Contract Flexibility
-                </label>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Cost Parameters
+                </h2>
 
-                <select
-                  value={form.contractFlexibility}
-                  onChange={(e) =>
-                    updateField(
-                      "contractFlexibility",
-                      e.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="FLEXIBLE">
-                    Flexible
-                  </option>
-
-                  <option value="FIXED">
-                    Fixed
-                  </option>
-                </select>
-              </div>
-
-
-              {/* Delay */}
-
-              <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Port Delay (Days)
-                </label>
-
-                <input
-                  type="number"
-                  min="0"
-                  value={form.portDelayDays}
-                  onChange={(e) =>
-                    updateField(
-                      "portDelayDays",
-                      e.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
+                <p className="text-sm text-slate-500">
+                  Estimated operational cost inputs.
+                </p>
               </div>
 
             </div>
 
-          </div>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-
-          {/* Divider */}
-
-          <div className="border-t my-7 border-slate-100" />
-
-
-          {/* Advanced Costs */}
-
-          <details>
-
-            <summary className="text-sm font-semibold cursor-pointer text-slate-700">
-              Advanced Cost Parameters
-            </summary>
-
-            <div className="grid grid-cols-1 gap-5 mt-5 md:grid-cols-2">
+              {/* FUEL */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
                   Fuel Cost (USD)
                 </label>
 
                 <input
                   type="number"
-                  min="0"
+                  name="fuelCost"
                   value={form.fuelCost}
-                  onChange={(e) =>
-                    updateField("fuelCost", e.target.value)
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+                  onChange={handleChange}
+                  min="0"
+                  className="w-full px-4 py-3 border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
+              {/* PORT */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Port / Handling Cost (USD)
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Port Cost (USD)
                 </label>
 
                 <input
                   type="number"
-                  min="0"
+                  name="portCost"
                   value={form.portCost}
-                  onChange={(e) =>
-                    updateField("portCost", e.target.value)
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+                  onChange={handleChange}
+                  min="0"
+                  className="w-full px-4 py-3 border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
+              {/* IDLE */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
                   Idle / Demurrage Cost (USD)
                 </label>
 
                 <input
                   type="number"
-                  min="0"
+                  name="idleCost"
                   value={form.idleCost}
-                  onChange={(e) =>
-                    updateField("idleCost", e.target.value)
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+                  onChange={handleChange}
+                  min="0"
+                  className="w-full px-4 py-3 border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
+              {/* RISK */}
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
                   Risk Cost (USD)
                 </label>
 
                 <input
                   type="number"
-                  min="0"
+                  name="riskCost"
                   value={form.riskCost}
-                  onChange={(e) =>
-                    updateField("riskCost", e.target.value)
-                  }
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+                  onChange={handleChange}
+                  min="0"
+                  className="w-full px-4 py-3 border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
             </div>
+          </div>
 
-          </details>
+          {/* =================================================
+              OPERATIONAL PARAMETERS
+          ================================================= */}
 
+          <div className="p-6 bg-white shadow-xl rounded-2xl">
 
-          {/* Run Button */}
+            <div className="flex items-center gap-3 mb-6">
+
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100">
+                <FiClock className="text-xl text-amber-600" />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Operational Parameters
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Current vessel and port conditions.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+
+              {/* PORT DELAY */}
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Port Delay (days)
+                </label>
+
+                <input
+                  type="number"
+                  name="portDelayDays"
+                  value={form.portDelayDays}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.5"
+                  className="w-full px-4 py-3 border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              {/* VESSEL AVAILABILITY */}
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Vessel Availability
+                </label>
+
+                <select
+                  name="vesselAvailability"
+                  value={form.vesselAvailability}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+
+              {/* CONTRACT FLEXIBILITY */}
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Contract Flexibility
+                </label>
+
+                <select
+                  name="contractFlexibility"
+                  value={form.contractFlexibility}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white border rounded-xl border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="FLEXIBLE">Flexible</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="FIXED">Fixed</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+
+          {/* =================================================
+              ERROR
+          ================================================= */}
+
+          {error && (
+            <div className="flex items-start gap-3 p-5 border border-red-200 bg-red-50 rounded-2xl">
+
+              <FiXCircle className="text-red-600 text-xl mt-0.5" />
+
+              <div>
+                <h3 className="font-semibold text-red-800">
+                  Analysis Failed
+                </h3>
+
+                <p className="mt-1 text-sm text-red-700">
+                  {error}
+                </p>
+              </div>
+
+            </div>
+          )}
+
+          {/* =================================================
+              RUN ANALYSIS BUTTON
+          ================================================= */}
 
           <button
             onClick={runAnalysis}
             disabled={loading}
-            className="flex items-center justify-center w-full gap-2 px-5 py-3 text-sm font-semibold text-white transition rounded-lg mt-7 bg-slate-800 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center justify-center w-full gap-3 px-6 py-4 font-semibold text-white transition shadow-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-500 rounded-2xl"
           >
 
             {loading ? (
               <>
-                <FiLoader
-                  className="animate-spin"
-                  size={17}
-                />
+                <FiLoader className="text-xl animate-spin" />
                 Running Chartering Analysis...
               </>
             ) : (
               <>
-                <FiActivity size={17} />
                 Run Chartering Analysis
+                <FiArrowRight className="text-xl" />
               </>
             )}
 
           </button>
 
-
-          {/* Error */}
-
-          {error && (
-            <div className="p-4 mt-4 text-sm text-red-700 border border-red-200 rounded-lg bg-red-50">
-              {error}
-            </div>
-          )}
-
         </div>
 
+        {/* ===================================================
+            RIGHT SIDE - INFO PANEL
+        =================================================== */}
 
-        {/* =================================================
-            PIPELINE
-        ================================================= */}
+        <div className="space-y-6">
 
-        <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200">
+          <div className="p-6 text-white shadow-xl bg-slate-900 rounded-2xl">
 
-          <h2 className="font-semibold text-slate-800">
-            Analysis Pipeline
-          </h2>
+            <div className="flex items-center gap-3 mb-5">
 
-          <p className="mt-1 text-xs text-slate-500">
-            SAIL-FORGE decision workflow
-          </p>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-500/20">
+                <FiShield className="text-xl text-cyan-400" />
+              </div>
 
+              <div>
+                <h2 className="font-bold">
+                  SAIL-FORGE Intelligence
+                </h2>
 
-          <div className="mt-6 space-y-5">
+                <p className="text-xs text-slate-400">
+                  Chartering Decision Engine
+                </p>
+              </div>
 
-            {[
-              ["Forecast", "Freight market outlook"],
-              ["Feasibility", "Vessel & port constraints"],
-              ["Cost", "Total expected exposure"],
-              ["Risk", "Operational & market risk"],
-              ["Decision", "BOOK / WAIT / AVOID"],
-            ].map(([title, description], index) => (
+            </div>
 
-              <div
-                key={title}
-                className="flex items-start gap-3"
-              >
+            <div className="space-y-4">
 
-                <div className="flex flex-col items-center">
+              <div className="flex items-center gap-3">
+                <FiCheckCircle className="text-emerald-400" />
+                <span className="text-sm text-slate-300">
+                  Freight forecasting
+                </span>
+              </div>
 
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${
-                      result && index < 5
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
+              <div className="flex items-center gap-3">
+                <FiCheckCircle className="text-emerald-400" />
+                <span className="text-sm text-slate-300">
+                  Vessel feasibility
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FiCheckCircle className="text-emerald-400" />
+                <span className="text-sm text-slate-300">
+                  Cost estimation
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FiCheckCircle className="text-emerald-400" />
+                <span className="text-sm text-slate-300">
+                  Risk assessment
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FiCheckCircle className="text-emerald-400" />
+                <span className="text-sm text-slate-300">
+                  BOOK / WAIT / AVOID decision
+                </span>
+              </div>
+
+            </div>
+          </div>
+
+          {/* PIPELINE */}
+
+          <div className="p-6 bg-white shadow-xl rounded-2xl">
+
+            <h3 className="mb-5 font-bold text-slate-900">
+              Analysis Pipeline
+            </h3>
+
+            <div className="space-y-5">
+
+              {[
+                "Input Validation",
+                "Freight Forecast",
+                "Vessel Feasibility",
+                "Cost Analysis",
+                "Risk Assessment",
+                "Chartering Decision",
+              ].map((step, index) => (
+                <div
+                  key={step}
+                  className="flex items-center gap-3"
+                >
+
+                  <div className="flex items-center justify-center w-8 h-8 text-sm font-bold rounded-full bg-cyan-100 text-cyan-700">
                     {index + 1}
                   </div>
 
-                  {index !== 4 && (
-                    <div className="w-px mt-1 h-7 bg-slate-200" />
-                  )}
+                  <span className="text-sm text-slate-700">
+                    {step}
+                  </span>
 
                 </div>
-
-
-                <div className="pt-1">
-
-                  <p className="text-sm font-semibold text-slate-700">
-                    {title}
-                  </p>
-
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {description}
-                  </p>
-
-                </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-
-          <div className="p-4 border border-blue-100 rounded-lg mt-7 bg-blue-50">
-
-            <div className="flex gap-3">
-
-              <FiShield
-                className="mt-0.5 shrink-0 text-blue-600"
-                size={17}
-              />
-
-              <p className="text-xs leading-5 text-blue-800">
-                The system supports procurement decisions using
-                explainable market, vessel, cost and risk indicators.
-                Final commercial approval remains with the procurement team.
-              </p>
+              ))}
 
             </div>
-
           </div>
 
         </div>
-
       </div>
-
 
       {/* =====================================================
           RESULT
       ===================================================== */}
 
       {result && (
-        <div className="space-y-6">
+        <div className="p-6 bg-white shadow-xl rounded-2xl">
 
-          {/* Decision */}
+          <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
 
-          <div
-            className={`rounded-xl border p-6 shadow-sm ${decisionConfig.bg} ${decisionConfig.border}`}
-          >
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Analysis Result
+              </h2>
 
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <p className="mt-1 text-sm text-slate-500">
+                AI-assisted chartering recommendation generated
+                successfully.
+              </p>
+            </div>
 
-              <div className="flex items-start gap-4">
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold ${
+                result.decision === "BOOK"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : result.decision === "WAIT"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
 
-                <div className="p-3 bg-white shadow-sm rounded-xl">
-                  <DecisionIcon
-                    className={decisionConfig.text}
-                    size={28}
-                  />
-                </div>
+              {result.decision === "BOOK" && (
+                <FiCheckCircle />
+              )}
 
-                <div>
+              {result.decision === "WAIT" && <FiClock />}
 
-                  <p className="text-xs font-bold tracking-widest uppercase text-slate-500">
-                    Procurement Recommendation
-                  </p>
+              {result.decision === "AVOID" && <FiXCircle />}
 
-                  <h2
-                    className={`mt-1 text-3xl font-black ${decisionConfig.text}`}
-                  >
-                    {decisionConfig.label}
-                  </h2>
-
-                  <p className="mt-2 text-sm text-slate-600">
-                    {result.reasons?.[0] ||
-                      "Decision generated from current system inputs."}
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              <div className="px-5 py-3 text-center rounded-lg bg-white/80">
-
-                <p className="text-xs text-slate-500">
-                  Decision Confidence
-                </p>
-
-                <p className="mt-1 font-bold text-slate-800">
-                  {result.decision_confidence || "--"}
-                </p>
-
-              </div>
-
+              {result.decision}
             </div>
 
           </div>
 
+          {/* KPI CARDS */}
 
-          {/* KPI */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {/* DECISION */}
 
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+            <div className="p-5 border rounded-xl bg-slate-50 border-slate-200">
 
-              <FiTrendingDown
-                className="text-blue-600"
-                size={20}
-              />
-
-              <p className="mt-4 text-xs tracking-wide uppercase text-slate-400">
-                Freight Forecast
+              <p className="text-xs tracking-wide uppercase text-slate-500">
+                Decision Confidence
               </p>
 
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {formatCurrency(
-                  result.forecast?.forecast_rate
-                )}
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">
-                {result.forecast?.trend || "--"} •{" "}
-                {result.forecast?.confidence || "--"}
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                {result.decision_confidence}
               </p>
 
             </div>
 
+            {/* FORECAST */}
 
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+            <div className="p-5 border rounded-xl bg-slate-50 border-slate-200">
 
-              <FiDollarSign
-                className="text-slate-700"
-                size={20}
-              />
+              <div className="flex items-center justify-between">
 
-              <p className="mt-4 text-xs tracking-wide uppercase text-slate-400">
+                <p className="text-xs tracking-wide uppercase text-slate-500">
+                  Forecast Rate
+                </p>
+
+                {result.forecast?.trend === "RISING" ? (
+                  <FiTrendingUp className="text-red-500" />
+                ) : (
+                  <FiTrendingDown className="text-emerald-500" />
+                )}
+
+              </div>
+
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                ${result.forecast?.forecast_rate}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                {result.forecast?.unit}
+              </p>
+
+            </div>
+
+            {/* COST */}
+
+            <div className="p-5 border rounded-xl bg-slate-50 border-slate-200">
+
+              <p className="text-xs tracking-wide uppercase text-slate-500">
                 Expected Cost
               </p>
 
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {formatCurrency(
-                  result.cost?.total_expected_cost
-                )}
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                $
+                {Number(
+                  result.cost?.total_expected_cost || 0
+                ).toLocaleString()}
               </p>
 
               <p className="mt-1 text-xs text-slate-500">
-                {formatCurrency(
-                  result.cost?.expected_cost_per_tonne
-                )}{" "}
-                / MT
+                Total expected cost
               </p>
 
             </div>
 
+            {/* VESSELS */}
 
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+            <div className="p-5 border rounded-xl bg-slate-50 border-slate-200">
 
-              <FiAnchor
-                className="text-slate-700"
-                size={20}
-              />
-
-              <p className="mt-4 text-xs tracking-wide uppercase text-slate-400">
+              <p className="text-xs tracking-wide uppercase text-slate-500">
                 Feasible Vessels
               </p>
 
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {result.feasibility?.feasible_vessel_count ??
-                  0}
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                {result.feasibility?.feasible_vessel_count || 0}
               </p>
 
               <p className="mt-1 text-xs text-slate-500">
                 of{" "}
-                {result.feasibility?.total_vessels_checked ??
-                  0}{" "}
+                {result.feasibility?.total_vessels_checked || 0}{" "}
                 checked
               </p>
 
             </div>
 
+            {/* RISK */}
 
-            <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+            <div className="p-5 border rounded-xl bg-slate-50 border-slate-200">
 
-              <FiShield
-                className="text-slate-700"
-                size={20}
-              />
-
-              <p className="mt-4 text-xs tracking-wide uppercase text-slate-400">
-                Risk
+              <p className="text-xs tracking-wide uppercase text-slate-500">
+                Risk Score
               </p>
 
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {result.risk?.risk_score ?? 0}
-                <span className="text-sm text-slate-400">
-                  /100
-                </span>
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                {result.risk?.risk_score || 0}/100
               </p>
 
               <p className="mt-1 text-xs text-slate-500">
-                {result.risk?.risk_level || "--"}
+                {result.risk?.risk_level}
               </p>
 
             </div>
 
           </div>
 
+          {/* TREND + REASONS */}
 
-          {/* Vessel + Reasons */}
+          <div className="grid grid-cols-1 gap-6 mt-6 lg:grid-cols-2">
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* FORECAST */}
 
-            <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200">
+            <div className="p-5 border border-slate-200 rounded-xl">
 
-              <h2 className="font-semibold text-slate-800">
-                Feasible Vessel Options
-              </h2>
+              <h3 className="mb-4 font-bold text-slate-900">
+                Freight Outlook
+              </h3>
 
-              <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-3">
 
-                {(result.feasibility?.vessels || [])
-                  .map((vessel, index) => (
-
-                    <div
-                      key={vessel.vessel_id || index}
-                      className="flex items-center justify-between p-4 border rounded-lg border-slate-100"
-                    >
-
-                      <div>
-
-                        <p className="text-sm font-semibold text-slate-800">
-                          {vessel.name ||
-                            vessel.vessel_name ||
-                            `Vessel ${index + 1}`}
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-500">
-                          {vessel.vessel_type ||
-                            vessel.type ||
-                            "Compatible vessel"}
-                        </p>
-
-                      </div>
-
-                      <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
-                        FEASIBLE
-                      </span>
-
-                    </div>
-
-                  ))}
-
-                {(result.feasibility?.vessels || [])
-                  .length === 0 && (
-                  <p className="text-sm text-slate-500">
-                    No feasible vessel options found.
-                  </p>
+                {result.forecast?.trend === "RISING" ? (
+                  <FiTrendingUp className="text-2xl text-red-500" />
+                ) : (
+                  <FiTrendingDown className="text-2xl text-emerald-500" />
                 )}
+
+                <div>
+
+                  <p className="font-semibold text-slate-900">
+                    {result.forecast?.trend}
+                  </p>
+
+                  <p className="text-sm text-slate-500">
+                    Forecast confidence:{" "}
+                    {result.forecast?.confidence}
+                  </p>
+
+                </div>
 
               </div>
 
             </div>
 
+            {/* REASONS */}
 
-            <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200">
+            <div className="p-5 border border-slate-200 rounded-xl">
 
-              <h2 className="font-semibold text-slate-800">
-                Decision Rationale
-              </h2>
+              <h3 className="mb-4 font-bold text-slate-900">
+                Why This Decision?
+              </h3>
 
-              <div className="mt-4 space-y-3">
+              <div className="space-y-3">
 
-                {(result.reasons || []).map(
-                  (reason, index) => (
+                {result.reasons?.map((reason, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3"
+                  >
 
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 p-4 rounded-lg bg-slate-50"
-                    >
+                    <FiCheckCircle className="text-cyan-600 mt-0.5 flex-shrink-0" />
 
-                      <div className="flex items-center justify-center w-6 h-6 text-xs font-bold text-blue-700 bg-blue-100 rounded-full shrink-0">
-                        {index + 1}
-                      </div>
+                    <p className="text-sm text-slate-600">
+                      {reason}
+                    </p>
 
-                      <p className="text-sm leading-6 text-slate-600">
-                        {reason}
-                      </p>
-
-                    </div>
-
-                  )
-                )}
+                  </div>
+                ))}
 
               </div>
 
@@ -878,20 +872,48 @@ function NewAnalysis() {
 
           </div>
 
+          {/* COST PER TONNE */}
 
-          {/* Disclaimer */}
+          <div className="p-5 mt-6 border bg-slate-50 border-slate-200 rounded-xl">
 
-          <div className="p-4 border rounded-lg border-slate-200 bg-slate-50">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 
-            <p className="text-xs leading-5 text-slate-500">
-              <strong className="text-slate-600">
-                Procurement advisory:
-              </strong>{" "}
-              This analysis is decision support based on available
-              data and model outputs. Final chartering approval,
-              commercial negotiation and vessel nomination remain
-              with the authorized procurement team.
-            </p>
+              <div>
+                <p className="text-sm text-slate-500">
+                  Expected Cost Per Tonne
+                </p>
+
+                <p className="text-2xl font-bold text-slate-900">
+                  $
+                  {Number(
+                    result.cost?.expected_cost_per_tonne || 0
+                  ).toFixed(2)}
+                  /tonne
+                </p>
+              </div>
+
+              <div className="text-sm text-slate-500">
+                Model:{" "}
+                <span className="font-semibold text-slate-700">
+                  {result.model_status}
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* DASHBOARD BUTTON */}
+
+          <div className="flex justify-end mt-6">
+
+            <button
+              onClick={openDashboard}
+              className="flex items-center gap-2 px-6 py-3 font-semibold text-white transition bg-cyan-600 hover:bg-cyan-700 rounded-xl"
+            >
+              View Analysis Dashboard
+              <FiArrowRight />
+            </button>
 
           </div>
 

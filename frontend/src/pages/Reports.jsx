@@ -16,16 +16,24 @@ import {
 
 function Reports() {
   const [result, setResult] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const analysis = {
-    route: "C5",
-    cargoQuantity: 100000,
-    origin: "Tubarao",
-    destination: "Qingdao",
-    vesselAvailability: "AVAILABLE",
-    contractFlexibility: "FLEXIBLE",
+  const analysisId = sessionStorage.getItem("sailForgeAnalysisId");
+
+  const fallbackAnalysis = {
+    route: "AUS-PAR",
+    cargo_quantity: 100000,
+    origin: "Hay Point",
+    destination: "Paradip",
+    fuel_cost: 500000,
+    port_cost: 150000,
+    idle_cost: 100000,
+    risk_cost: 200000,
+    port_delay_days: 2,
+    vessel_availability: "HIGH",
+    contract_flexibility: "FLEXIBLE",
   };
 
   const fetchReportData = async () => {
@@ -33,18 +41,46 @@ function Reports() {
       setLoading(true);
       setError("");
 
+      let currentAnalysis = fallbackAnalysis;
+
+      // ---------------------------------------------
+      // GET ACTIVE ANALYSIS FROM DATABASE
+      // ---------------------------------------------
+      if (analysisId) {
+        const analysisResponse = await fetch(
+          `http://127.0.0.1:8000/api/analyses/${analysisId}`
+        );
+
+        const analysisData = await analysisResponse.json();
+
+        if (!analysisResponse.ok) {
+          throw new Error(
+            analysisData.detail || "Unable to load saved analysis."
+          );
+        }
+
+        currentAnalysis = analysisData.data || analysisData;
+      }
+
+      setAnalysis(currentAnalysis);
+
+      // ---------------------------------------------
+      // REGENERATE FULL DECISION REPORT
+      // ---------------------------------------------
       const params = new URLSearchParams({
-        route: analysis.route,
-        cargo_quantity: analysis.cargoQuantity,
-        origin: analysis.origin,
-        destination: analysis.destination,
-        fuel_cost: 0,
-        port_cost: 0,
-        idle_cost: 0,
-        risk_cost: 0,
-        port_delay_days: 0,
-        vessel_availability: analysis.vesselAvailability,
-        contract_flexibility: analysis.contractFlexibility,
+        route: currentAnalysis.route,
+        cargo_quantity: currentAnalysis.cargo_quantity,
+        origin: currentAnalysis.origin,
+        destination: currentAnalysis.destination,
+        fuel_cost: currentAnalysis.fuel_cost ?? 0,
+        port_cost: currentAnalysis.port_cost ?? 0,
+        idle_cost: currentAnalysis.idle_cost ?? 0,
+        risk_cost: currentAnalysis.risk_cost ?? 0,
+        port_delay_days: currentAnalysis.port_delay_days ?? 0,
+        vessel_availability:
+          currentAnalysis.vessel_availability || "HIGH",
+        contract_flexibility:
+          currentAnalysis.contract_flexibility || "FLEXIBLE",
       });
 
       const response = await fetch(
@@ -62,6 +98,7 @@ function Reports() {
       setResult(data.data);
     } catch (err) {
       console.error("REPORT ERROR:", err);
+
       setError(
         err.message || "Unable to generate procurement report."
       );
@@ -139,6 +176,7 @@ function Reports() {
     if (decision === "BOOK") return "BOOK NOW";
     if (decision === "WAIT") return "WAIT";
     if (decision === "AVOID") return "AVOID";
+
     return "--";
   };
 
@@ -216,7 +254,9 @@ function Reports() {
     result?.feasibility?.total_vessels_checked ?? 0;
 
   const forecastRate =
-    result?.forecast?.forecast_rate ?? 0;
+    result?.forecast?.forecast_rate ??
+    result?.forecast?.forecast_freight_rate ??
+    0;
 
   const trend =
     result?.forecast?.trend ?? "UNKNOWN";
@@ -236,16 +276,16 @@ function Reports() {
   const riskLevel =
     result?.risk?.risk_level ?? "UNKNOWN";
 
+  const riskFactors =
+    result?.risk?.risk_factors || [];
+
   const reasons =
     result?.reasons || [];
 
   return (
     <div className="min-h-screen p-8 bg-slate-100">
 
-      {/* =====================================================
-          REPORT HEADER
-      ===================================================== */}
-
+      {/* HEADER */}
       <div className="flex flex-col justify-between gap-5 mb-6 lg:flex-row lg:items-start">
 
         <div className="flex items-start gap-4">
@@ -270,7 +310,6 @@ function Reports() {
 
         </div>
 
-
         <div className="flex gap-3">
 
           <button
@@ -293,22 +332,18 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          REPORT META
-      ===================================================== */}
-
+      {/* REPORT META */}
       <div className="p-5 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
 
           <div>
             <p className="text-xs tracking-wide uppercase text-slate-400">
-              Report ID
+              Analysis ID
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              SAIL-C5-100K
+              {analysisId || "LOCAL-ANALYSIS"}
             </p>
           </div>
 
@@ -318,7 +353,11 @@ function Reports() {
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              {analysis.origin} → {analysis.destination}
+              {analysis?.origin} → {analysis?.destination}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-400">
+              {analysis?.route}
             </p>
           </div>
 
@@ -328,7 +367,9 @@ function Reports() {
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              {analysis.cargoQuantity.toLocaleString()} MT
+              {Number(
+                analysis?.cargo_quantity || 0
+              ).toLocaleString()} MT
             </p>
           </div>
 
@@ -347,11 +388,7 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          EXECUTIVE DECISION
-      ===================================================== */}
-
+      {/* EXECUTIVE DECISION */}
       <div
         className={`mb-6 rounded-xl border p-6 shadow-sm ${decisionStyle.bg} ${decisionStyle.border}`}
       >
@@ -385,7 +422,6 @@ function Reports() {
 
           </div>
 
-
           <div className="px-6 py-4 text-center rounded-xl bg-white/80">
 
             <p className="text-xs tracking-wide uppercase text-slate-500">
@@ -402,15 +438,10 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          EXECUTIVE SUMMARY CARDS
-      ===================================================== */}
-
+      {/* EXECUTIVE SUMMARY */}
       <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
 
-        {/* Freight */}
-
+        {/* FREIGHT */}
         <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
 
           <div className="flex items-center justify-between">
@@ -420,9 +451,15 @@ function Reports() {
             </p>
 
             {trend === "FALLING" ? (
-              <FiTrendingDown className="text-green-600" size={19} />
+              <FiTrendingDown
+                className="text-green-600"
+                size={19}
+              />
             ) : (
-              <FiTrendingUp className="text-red-600" size={19} />
+              <FiTrendingUp
+                className="text-red-600"
+                size={19}
+              />
             )}
 
           </div>
@@ -449,9 +486,7 @@ function Reports() {
 
         </div>
 
-
-        {/* Cost */}
-
+        {/* COST */}
         <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
 
           <p className="text-xs tracking-wide uppercase text-slate-400">
@@ -472,9 +507,7 @@ function Reports() {
 
         </div>
 
-
-        {/* Vessel */}
-
+        {/* VESSEL */}
         <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
 
           <p className="text-xs tracking-wide uppercase text-slate-400">
@@ -495,9 +528,7 @@ function Reports() {
 
         </div>
 
-
-        {/* Risk */}
-
+        {/* RISK */}
         <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
 
           <p className="text-xs tracking-wide uppercase text-slate-400">
@@ -524,21 +555,16 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          MARKET OUTLOOK + VESSEL
-      ===================================================== */}
-
+      {/* MARKET + VESSEL */}
       <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
 
-        {/* Market */}
-
+        {/* MARKET */}
         <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
           <div className="flex items-center gap-3 mb-5">
 
             <div className="p-2 rounded-lg bg-blue-50">
-              <FiTrendingDown
+              <FiTrendingUp
                 className="text-blue-600"
                 size={19}
               />
@@ -556,11 +582,9 @@ function Reports() {
 
           </div>
 
-
           <div className="grid grid-cols-2 gap-4">
 
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Forecast Rate
               </p>
@@ -572,12 +596,9 @@ function Reports() {
               <p className="text-xs text-slate-400">
                 per MT
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Market Trend
               </p>
@@ -585,12 +606,9 @@ function Reports() {
               <p className="mt-1 text-xl font-bold text-slate-800">
                 {trend}
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Model Confidence
               </p>
@@ -598,24 +616,19 @@ function Reports() {
               <p className="mt-1 text-xl font-bold text-slate-800">
                 {confidence}
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Model Status
               </p>
 
               <p className="mt-1 text-xl font-bold text-slate-800">
-                BASELINE
+                {result?.forecast?.model_status || "BASELINE"}
               </p>
-
             </div>
 
           </div>
-
 
           <div className="p-4 mt-5 border rounded-lg border-amber-200 bg-amber-50">
 
@@ -633,9 +646,7 @@ function Reports() {
 
         </div>
 
-
-        {/* Vessel */}
-
+        {/* VESSEL */}
         <div className="p-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
           <div className="flex items-center gap-3 mb-5">
@@ -659,7 +670,6 @@ function Reports() {
 
           </div>
 
-
           <div className="flex items-center justify-between p-4 mb-4 rounded-lg bg-slate-50">
 
             <div>
@@ -679,7 +689,6 @@ function Reports() {
 
           </div>
 
-
           <div className="space-y-3">
 
             {feasibleVessels.length > 0 ? (
@@ -690,7 +699,6 @@ function Reports() {
                 >
 
                   <div>
-
                     <p className="text-sm font-semibold text-slate-800">
                       {vessel.name ||
                         vessel.vessel_name ||
@@ -702,7 +710,6 @@ function Reports() {
                         vessel.type ||
                         "Compatible vessel"}
                     </p>
-
                   </div>
 
                   <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
@@ -723,11 +730,7 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          COST ANALYSIS
-      ===================================================== */}
-
+      {/* COST ANALYSIS */}
       <div className="p-6 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
         <div className="flex items-center gap-3 mb-5">
@@ -751,7 +754,6 @@ function Reports() {
 
         </div>
 
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 
           <div className="p-4 border rounded-lg border-slate-100">
@@ -761,11 +763,13 @@ function Reports() {
             </p>
 
             <p className="mt-2 text-lg font-bold text-slate-800">
-              {formatCurrency(forecastRate * analysis.cargoQuantity)}
+              {formatCurrency(
+                forecastRate *
+                Number(analysis?.cargo_quantity || 0)
+              )}
             </p>
 
           </div>
-
 
           <div className="p-4 border rounded-lg border-slate-100">
 
@@ -778,7 +782,6 @@ function Reports() {
             </p>
 
           </div>
-
 
           <div className="p-4 border rounded-lg border-slate-100">
 
@@ -794,20 +797,14 @@ function Reports() {
 
         </div>
 
-
         <p className="mt-4 text-xs text-slate-400">
-          Cost components are based only on values currently available to
-          the system. Fuel, port, idle/demurrage and risk costs are not
-          artificially populated when no validated input is available.
+          Cost exposure is calculated from the current analysis inputs
+          and the freight forecast returned by the decision engine.
         </p>
 
       </div>
 
-
-      {/* =====================================================
-          RISK
-      ===================================================== */}
-
+      {/* RISK */}
       <div className="p-6 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
         <div className="flex items-center gap-3 mb-5">
@@ -831,7 +828,6 @@ function Reports() {
 
         </div>
 
-
         <div className="flex flex-col gap-5 md:flex-row md:items-center">
 
           <div className="flex flex-col items-center justify-center border-8 rounded-full h-28 w-28 shrink-0 border-slate-100">
@@ -845,7 +841,6 @@ function Reports() {
             </p>
 
           </div>
-
 
           <div className="flex-1">
 
@@ -865,15 +860,15 @@ function Reports() {
 
             </div>
 
-
             <div className="mt-4 space-y-2">
 
-              {(result?.risk?.risk_factors || []).map(
-                (factor, index) => (
+              {riskFactors.length > 0 ? (
+                riskFactors.map((factor, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-2 text-sm text-slate-600"
                   >
+
                     <FiAlertTriangle
                       className="mt-0.5 shrink-0 text-amber-500"
                       size={15}
@@ -886,12 +881,10 @@ function Reports() {
                           factor.name ||
                           `Risk factor ${index + 1}`}
                     </span>
-                  </div>
-                )
-              )}
 
-              {(!result?.risk?.risk_factors ||
-                result.risk.risk_factors.length === 0) && (
+                  </div>
+                ))
+              ) : (
                 <p className="text-sm text-slate-500">
                   No additional risk factors reported.
                 </p>
@@ -905,11 +898,7 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          DECISION RATIONALE
-      ===================================================== */}
-
+      {/* DECISION RATIONALE */}
       <div className="p-6 mb-6 border border-blue-200 rounded-xl bg-blue-50">
 
         <div className="flex items-center gap-3 mb-5">
@@ -929,7 +918,6 @@ function Reports() {
           </div>
 
         </div>
-
 
         <div className="space-y-3">
 
@@ -960,11 +948,7 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          FINAL PROCUREMENT ACTION
-      ===================================================== */}
-
+      {/* FINAL ACTION */}
       <div
         className={`mb-6 rounded-xl border p-6 ${decisionStyle.border} ${decisionStyle.bg}`}
       >
@@ -992,7 +976,6 @@ function Reports() {
 
           </div>
 
-
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/80">
 
             <FiShield
@@ -1010,11 +993,7 @@ function Reports() {
 
       </div>
 
-
-      {/* =====================================================
-          REPORT FOOTER
-      ===================================================== */}
-
+      {/* FOOTER */}
       <div className="pt-5 border-t border-slate-200">
 
         <div className="flex flex-col justify-between gap-3 text-xs text-slate-400 md:flex-row">

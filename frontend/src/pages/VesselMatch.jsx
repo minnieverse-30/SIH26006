@@ -16,8 +16,8 @@ function VesselMatch() {
   // ==============================
 
   const cargoQuantity = 100000;
-  const origin = "Tubarao";
-  const destination = "Qingdao";
+  const origin = "Hay Point";
+  const destination = "Paradip";
 
   // ==============================
   // STATE
@@ -31,17 +31,13 @@ function VesselMatch() {
   // FETCH VESSELS
   // ==============================
 
-  useEffect(() => {
-    fetchVessels();
-  }, []);
-
   const fetchVessels = async () => {
     try {
       setLoading(true);
       setError("");
 
       const params = new URLSearchParams({
-        cargo_quantity: cargoQuantity,
+        cargo_quantity: String(cargoQuantity),
         origin: origin,
         destination: destination,
       });
@@ -52,17 +48,31 @@ function VesselMatch() {
 
       const data = await response.json();
 
+      console.log("VESSEL FEASIBILITY RESPONSE:", data);
+
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to load vessel data");
+        throw new Error(
+          data.detail || "Failed to load vessel data"
+        );
       }
 
       setVessels(data.data?.vessels || []);
     } catch (err) {
-      setError(err.message || "Unable to load vessel data");
+      console.error("Vessel feasibility error:", err);
+
+      setError(
+        err.message || "Unable to load vessel data"
+      );
+
+      setVessels([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchVessels();
+  }, []);
 
   // ==============================
   // DERIVED DATA
@@ -73,7 +83,9 @@ function VesselMatch() {
   );
 
   const recommendedVessel =
-    feasibleVessels.length > 0 ? feasibleVessels[0] : null;
+    feasibleVessels.length > 0
+      ? feasibleVessels[0]
+      : null;
 
   // ==============================
   // CHECK HELPERS
@@ -107,31 +119,16 @@ function VesselMatch() {
     }
 
     const failedChecks = vessel.checks
-      ? Object.values(vessel.checks).filter((value) => !value).length
+      ? Object.values(vessel.checks).filter(
+          (value) => !value
+        ).length
       : 0;
 
-    if (failedChecks >= 4) {
+    if (failedChecks >= 3) {
       return "High";
     }
 
     return "Medium";
-  };
-
-  const getPortStatus = (vessel) => {
-    const checks = vessel.checks || {};
-
-    const portChecks = [
-      checks.origin_draft,
-      checks.destination_draft,
-      checks.origin_loa,
-      checks.destination_loa,
-      checks.origin_beam,
-      checks.destination_beam,
-      checks.origin_vessel_type,
-      checks.destination_vessel_type,
-    ];
-
-    return portChecks.every(Boolean) ? "Compatible" : "Review Required";
   };
 
   // ==============================
@@ -141,7 +138,7 @@ function VesselMatch() {
   return (
     <div className="min-h-screen p-8 bg-slate-100">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
 
       <div className="flex flex-col justify-between gap-4 mb-8 lg:flex-row lg:items-center">
 
@@ -168,19 +165,18 @@ function VesselMatch() {
         <div className="px-4 py-3 bg-white border rounded-lg border-slate-200">
 
           <p className="text-xs text-slate-500">
-            Analysis ID
+            Analysis Route
           </p>
 
           <p className="mt-1 text-sm font-semibold text-slate-800">
-            ANL-1024
+            {origin} → {destination}
           </p>
 
         </div>
 
       </div>
 
-
-      {/* ================= ERROR ================= */}
+      {/* ERROR */}
 
       {error && (
 
@@ -210,8 +206,7 @@ function VesselMatch() {
 
       )}
 
-
-      {/* ================= REQUEST SUMMARY ================= */}
+      {/* REQUEST SUMMARY */}
 
       <div className="p-5 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
@@ -224,7 +219,7 @@ function VesselMatch() {
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              Freight Cargo
+              Coking Coal
             </p>
 
             <p className="text-xs text-slate-500">
@@ -233,7 +228,6 @@ function VesselMatch() {
 
           </div>
 
-
           <div>
 
             <p className="text-xs tracking-wide uppercase text-slate-500">
@@ -241,15 +235,11 @@ function VesselMatch() {
             </p>
 
             <p className="flex items-center gap-2 mt-1 font-semibold text-slate-800">
-
               <FiMapPin size={15} />
-
               {origin} → {destination}
-
             </p>
 
           </div>
-
 
           <div>
 
@@ -258,15 +248,11 @@ function VesselMatch() {
             </p>
 
             <p className="flex items-center gap-2 mt-1 font-semibold text-slate-800">
-
               <FiCalendar size={15} />
-
               Current Availability
-
             </p>
 
           </div>
-
 
           <div>
 
@@ -288,8 +274,7 @@ function VesselMatch() {
 
       </div>
 
-
-      {/* ================= LOADING ================= */}
+      {/* LOADING */}
 
       {loading && (
 
@@ -320,8 +305,7 @@ function VesselMatch() {
 
       )}
 
-
-      {/* ================= BEST MATCH ================= */}
+      {/* BEST MATCH */}
 
       {!loading && recommendedVessel && (
 
@@ -361,7 +345,6 @@ function VesselMatch() {
 
             </div>
 
-
             <div className="px-5 py-3 text-center bg-white rounded-lg shadow-sm">
 
               <p className="text-xs text-slate-500">
@@ -380,8 +363,7 @@ function VesselMatch() {
 
       )}
 
-
-      {/* ================= NO FEASIBLE VESSEL ================= */}
+      {/* NO FEASIBLE VESSEL */}
 
       {!loading &&
         !error &&
@@ -404,9 +386,8 @@ function VesselMatch() {
                 </p>
 
                 <p className="mt-1 text-sm text-amber-700">
-                  None of the screened vessels currently satisfies all
-                  cargo, port and availability constraints.
-
+                  None of the screened vessels currently satisfies
+                  all cargo, port and availability constraints.
                 </p>
 
               </div>
@@ -417,8 +398,7 @@ function VesselMatch() {
 
         )}
 
-
-      {/* ================= VESSEL TABLE ================= */}
+      {/* VESSEL TABLE */}
 
       <div className="bg-white border shadow-sm rounded-xl border-slate-200">
 
@@ -429,18 +409,15 @@ function VesselMatch() {
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-
             Ranked using vessel capacity, port constraints,
             availability and compatibility checks.
-
           </p>
 
         </div>
 
-
         <div className="overflow-x-auto">
 
-          <table className="w-full min-w-[1200px] text-left">
+          <table className="w-full min-w-[1000px] text-left">
 
             <thead className="bg-slate-50">
 
@@ -459,15 +436,11 @@ function VesselMatch() {
                 </th>
 
                 <th className="px-6 py-4">
-                  Port Status
-                </th>
-
-                <th className="px-6 py-4">
                   Risk
                 </th>
 
                 <th className="px-6 py-4">
-                  Capacity
+                  Capacity Check
                 </th>
 
                 <th className="px-6 py-4">
@@ -483,6 +456,10 @@ function VesselMatch() {
                 </th>
 
                 <th className="px-6 py-4">
+                  Vessel Type
+                </th>
+
+                <th className="px-6 py-4">
                   Match
                 </th>
 
@@ -490,19 +467,19 @@ function VesselMatch() {
 
             </thead>
 
-
             <tbody>
 
               {!loading &&
-                vessels.map((vessel, index) => {
+                vessels.map((vessel) => {
 
-                  const matchScore = getMatchScore(vessel);
+                  const matchScore =
+                    getMatchScore(vessel);
 
-                  const risk = getRisk(vessel);
+                  const risk =
+                    getRisk(vessel);
 
-                  const portStatus = getPortStatus(vessel);
-
-                  const checks = vessel.checks || {};
+                  const checks =
+                    vessel.checks || {};
 
                   return (
 
@@ -537,15 +514,13 @@ function VesselMatch() {
 
                       </td>
 
-
-                      {/* CAPACITY VALUE */}
+                      {/* CAPACITY */}
 
                       <td className="px-6 py-5 text-sm text-slate-700">
 
                         {vessel.capacity_tonnes?.toLocaleString()} MT
 
                       </td>
-
 
                       {/* STATUS */}
 
@@ -566,26 +541,6 @@ function VesselMatch() {
                         </span>
 
                       </td>
-
-
-                      {/* PORT STATUS */}
-
-                      <td className="px-6 py-5">
-
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            portStatus === "Compatible"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-
-                          {portStatus}
-
-                        </span>
-
-                      </td>
-
 
                       {/* RISK */}
 
@@ -611,7 +566,6 @@ function VesselMatch() {
 
                       </td>
 
-
                       {/* CAPACITY CHECK */}
 
                       <td className="px-6 py-5">
@@ -630,13 +584,11 @@ function VesselMatch() {
 
                       </td>
 
-
                       {/* DRAFT */}
 
                       <td className="px-6 py-5">
 
-                        {checks.origin_draft &&
-                        checks.destination_draft ? (
+                        {checks.destination_draft ? (
                           <FiCheckCircle
                             className="text-green-600"
                             size={18}
@@ -649,14 +601,12 @@ function VesselMatch() {
                         )}
 
                       </td>
-
 
                       {/* LOA */}
 
                       <td className="px-6 py-5">
 
-                        {checks.origin_loa &&
-                        checks.destination_loa ? (
+                        {checks.destination_loa ? (
                           <FiCheckCircle
                             className="text-green-600"
                             size={18}
@@ -669,14 +619,12 @@ function VesselMatch() {
                         )}
 
                       </td>
-
 
                       {/* BEAM */}
 
                       <td className="px-6 py-5">
 
-                        {checks.origin_beam &&
-                        checks.destination_beam ? (
+                        {checks.destination_beam ? (
                           <FiCheckCircle
                             className="text-green-600"
                             size={18}
@@ -690,6 +638,23 @@ function VesselMatch() {
 
                       </td>
 
+                      {/* VESSEL TYPE */}
+
+                      <td className="px-6 py-5">
+
+                        {checks.destination_vessel_type ? (
+                          <FiCheckCircle
+                            className="text-green-600"
+                            size={18}
+                          />
+                        ) : (
+                          <FiAlertTriangle
+                            className="text-red-500"
+                            size={18}
+                          />
+                        )}
+
+                      </td>
 
                       {/* MATCH */}
 
@@ -719,9 +684,7 @@ function VesselMatch() {
                     </tr>
 
                   );
-
                 })}
-
 
               {/* EMPTY */}
 
@@ -761,17 +724,15 @@ function VesselMatch() {
 
         </div>
 
-
-        {/* ================= TABLE FOOTER ================= */}
+        {/* TABLE FOOTER */}
 
         <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
 
           <p className="text-xs text-slate-500">
 
-            Compatibility is calculated from capacity, draft, LOA,
-            beam, vessel type support and current availability.
-            Match percentage represents the proportion of screening
-            checks passed.
+            Compatibility is calculated from vessel capacity,
+            destination port draft, LOA, beam, vessel type
+            and current availability.
 
           </p>
 
@@ -779,19 +740,18 @@ function VesselMatch() {
 
       </div>
 
-
-      {/* ================= NEXT ACTION ================= */}
+      {/* NEXT ACTION */}
 
       <div className="flex justify-end mt-6">
 
         <button
           onClick={() => {
-            window.location.href = "/cost-comparison";
+            window.location.href = "/vessel-tracking";
           }}
           className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
         >
 
-          Compare Total Cost
+          Track Vessels
 
           <FiArrowRight size={17} />
 

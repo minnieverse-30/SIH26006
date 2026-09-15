@@ -14,10 +14,7 @@ import {
 } from "react-icons/fi";
 
 function WhatIf() {
-  const route = "C5";
-  const cargoQuantity = 100000;
-  const origin = "Tubarao";
-  const destination = "Qingdao";
+  const [analysis, setAnalysis] = useState(null);
 
   const [freightChange, setFreightChange] = useState(0);
   const [delayDays, setDelayDays] = useState(0);
@@ -34,34 +31,86 @@ function WhatIf() {
       setLoading(true);
       setError("");
 
+      let currentAnalysis;
+
+      const analysisId = sessionStorage.getItem(
+        "sailForgeAnalysisId"
+      );
+
+      // --------------------------------------------------
+      // LOAD ACTIVE ANALYSIS
+      // --------------------------------------------------
+
+      if (analysisId) {
+        const analysisResponse = await fetch(
+          `http://127.0.0.1:8000/api/analyses/${analysisId}`
+        );
+
+        const analysisData = await analysisResponse.json();
+
+        if (!analysisResponse.ok) {
+          throw new Error(
+            analysisData.detail ||
+              "Unable to load saved analysis."
+          );
+        }
+
+        currentAnalysis =
+          analysisData.data || analysisData;
+      } else {
+        // Fallback to New Analysis defaults
+        currentAnalysis = {
+          route: "AUS-PAR",
+          cargo_quantity: 100000,
+          origin: "Hay Point",
+          destination: "Paradip",
+          fuel_cost: 500000,
+          port_cost: 150000,
+          idle_cost: 100000,
+          risk_cost: 200000,
+          port_delay_days: 2,
+          vessel_availability: "HIGH",
+          contract_flexibility: "FLEXIBLE",
+        };
+      }
+
+      setAnalysis(currentAnalysis);
+
       // --------------------------------------------------
       // BASE DECISION
       // --------------------------------------------------
+
       const baseParams = new URLSearchParams({
-        route,
-        cargo_quantity: cargoQuantity,
-        origin,
-        destination,
-        fuel_cost: 0,
-        port_cost: 0,
-        idle_cost: 0,
-        risk_cost: 0,
-        port_delay_days: 0,
-        vessel_availability: "AVAILABLE",
-        contract_flexibility: "FLEXIBLE",
+        route: currentAnalysis.route,
+        cargo_quantity: currentAnalysis.cargo_quantity,
+        origin: currentAnalysis.origin,
+        destination: currentAnalysis.destination,
+        fuel_cost: currentAnalysis.fuel_cost ?? 0,
+        port_cost: currentAnalysis.port_cost ?? 0,
+        idle_cost: currentAnalysis.idle_cost ?? 0,
+        risk_cost: currentAnalysis.risk_cost ?? 0,
+        port_delay_days:
+          currentAnalysis.port_delay_days ?? 0,
+        vessel_availability:
+          currentAnalysis.vessel_availability || "HIGH",
+        contract_flexibility:
+          currentAnalysis.contract_flexibility || "FLEXIBLE",
       });
 
       // --------------------------------------------------
       // WHAT-IF SCENARIO
       // --------------------------------------------------
+
       const scenarioParams = new URLSearchParams({
-        route,
-        cargo_quantity: cargoQuantity,
+        route: currentAnalysis.route,
+        cargo_quantity: currentAnalysis.cargo_quantity,
         freight_change_percent: freightChange,
         fuel_change_percent: fuelChange,
         port_delay_days: delayDays,
-        vessel_availability: "AVAILABLE",
-        contract_flexibility: "FLEXIBLE",
+        vessel_availability:
+          currentAnalysis.vessel_availability || "HIGH",
+        contract_flexibility:
+          currentAnalysis.contract_flexibility || "FLEXIBLE",
       });
 
       const [baseResponse, scenarioResponse] =
@@ -79,7 +128,8 @@ function WhatIf() {
 
       if (!baseResponse.ok) {
         throw new Error(
-          baseData.detail || "Unable to load base decision."
+          baseData.detail ||
+            "Unable to load base decision."
         );
       }
 
@@ -90,12 +140,16 @@ function WhatIf() {
         );
       }
 
-      setBaseResult(baseData.data);
-      setScenarioResult(scenarioData.data);
+      setBaseResult(baseData.data || baseData);
+      setScenarioResult(
+        scenarioData.data || scenarioData
+      );
     } catch (err) {
       console.error("WHAT-IF ERROR:", err);
+
       setError(
-        err.message || "Unable to run scenario analysis."
+        err.message ||
+          "Unable to run scenario analysis."
       );
     } finally {
       setLoading(false);
@@ -113,7 +167,11 @@ function WhatIf() {
   };
 
   const formatCurrency = (value) => {
-    if (value === undefined || value === null) {
+    if (
+      value === undefined ||
+      value === null ||
+      Number.isNaN(Number(value))
+    ) {
       return "--";
     }
 
@@ -124,7 +182,11 @@ function WhatIf() {
   };
 
   const formatMillions = (value) => {
-    if (value === undefined || value === null) {
+    if (
+      value === undefined ||
+      value === null ||
+      Number.isNaN(Number(value))
+    ) {
       return "--";
     }
 
@@ -193,44 +255,66 @@ function WhatIf() {
   };
 
   // --------------------------------------------------
-  // Extract BASE values
+  // BASE VALUES
   // --------------------------------------------------
 
-  const baseDecision = baseResult?.decision || "--";
+  const baseDecision =
+    baseResult?.decision || "--";
 
   const baseForecast =
-    baseResult?.forecast?.forecast_rate ?? 0;
+    baseResult?.forecast?.forecast_rate ??
+    baseResult?.forecast?.forecast_freight_rate ??
+    0;
 
   const baseCost =
-    baseResult?.cost?.total_expected_cost ?? 0;
+    baseResult?.cost?.total_expected_cost ??
+    0;
 
   const baseRisk =
-    baseResult?.risk?.risk_score ?? 0;
+    baseResult?.risk?.risk_score ??
+    0;
 
   const baseRiskLevel =
-    baseResult?.risk?.risk_level ?? "UNKNOWN";
+    baseResult?.risk?.risk_level ??
+    "UNKNOWN";
 
   const baseTrend =
-    baseResult?.forecast?.trend ?? "UNKNOWN";
+    baseResult?.forecast?.trend ??
+    "UNKNOWN";
+
+  const baseFeasibleVessels =
+    baseResult?.feasibility?.feasible_vessel_count ??
+    0;
+
+  const baseTotalVessels =
+    baseResult?.feasibility?.total_vessels_checked ??
+    0;
 
   // --------------------------------------------------
-  // Extract SCENARIO values
+  // SCENARIO VALUES
   // --------------------------------------------------
 
   const scenarioDecision =
-    scenarioResult?.decision ||
-    scenarioResult?.scenario_decision ||
+    scenarioResult?.decision ??
+    scenarioResult?.scenario_decision ??
     "--";
 
   const scenarioForecast =
     scenarioResult?.scenario_freight_rate ??
-    scenarioResult?.scenario_forecast?.forecast_freight_rate ??
-    scenarioResult?.base_forecast?.forecast_freight_rate ??
+    scenarioResult?.scenario_forecast
+      ?.forecast_freight_rate ??
+    scenarioResult?.forecast
+      ?.forecast_freight_rate ??
+    scenarioResult?.base_forecast
+      ?.forecast_freight_rate ??
     baseForecast;
 
   const scenarioCost =
     scenarioResult?.scenario_total_cost ??
-    scenarioResult?.scenario_cost?.total_expected_cost ??
+    scenarioResult?.scenario_cost
+      ?.total_expected_cost ??
+    scenarioResult?.cost
+      ?.total_expected_cost ??
     scenarioResult?.total_expected_cost ??
     baseCost;
 
@@ -245,21 +329,23 @@ function WhatIf() {
     baseRiskLevel;
 
   // --------------------------------------------------
-  // Comparison
+  // COMPARISON
   // --------------------------------------------------
 
-  const costDifference = scenarioCost - baseCost;
+  const costDifference =
+    scenarioCost - baseCost;
 
   const freightDifference =
     scenarioForecast - baseForecast;
 
-  const riskDifference = scenarioRisk - baseRisk;
+  const riskDifference =
+    scenarioRisk - baseRisk;
 
   const decisionChanged =
     baseDecision !== scenarioDecision;
 
   // --------------------------------------------------
-  // WHY DID DECISION CHANGE?
+  // EXPLANATION
   // --------------------------------------------------
 
   const getDecisionExplanation = () => {
@@ -275,14 +361,14 @@ function WhatIf() {
         scenarioDecision === "WAIT" &&
         baseDecision === "BOOK"
       ) {
-        return `The scenario increases exposure to changing market or operational conditions. The system therefore shifts from BOOK NOW to WAIT to avoid committing under a less favorable scenario.`;
+        return "The scenario increases exposure to changing market or operational conditions. The system therefore shifts from BOOK NOW to WAIT to avoid committing under a less favorable scenario.";
       }
 
       if (scenarioDecision === "AVOID") {
-        return `The scenario creates an unfavorable risk or operational condition. The system recommends avoiding the option rather than proceeding with the charter.`;
+        return "The scenario creates an unfavorable risk or operational condition. The system recommends avoiding the option rather than proceeding with the charter.";
       }
 
-      return `The recommendation changed because the scenario assumptions altered the calculated freight, expected cost and/or risk indicators.`;
+      return "The recommendation changed because the scenario assumptions altered the calculated freight, expected cost and/or risk indicators.";
     }
 
     if (
@@ -290,7 +376,7 @@ function WhatIf() {
       delayDays === 0 &&
       fuelChange === 0
     ) {
-      return `No scenario assumptions have been changed. The system is showing the baseline procurement recommendation for this cargo movement.`;
+      return "No scenario assumptions have been changed. The system is showing the baseline procurement recommendation for this cargo movement.";
     }
 
     return `The recommendation remains ${getDecisionLabel(
@@ -299,7 +385,7 @@ function WhatIf() {
   };
 
   // --------------------------------------------------
-  // Loading
+  // LOADING
   // --------------------------------------------------
 
   if (loading && !scenarioResult) {
@@ -320,7 +406,7 @@ function WhatIf() {
   }
 
   // --------------------------------------------------
-  // Error
+  // ERROR
   // --------------------------------------------------
 
   if (error && !scenarioResult) {
@@ -359,14 +445,10 @@ function WhatIf() {
   return (
     <div className="min-h-screen p-8 bg-slate-100">
 
-      {/* ==================================================
-          HEADER
-      ================================================== */}
+      {/* HEADER */}
 
       <div className="flex flex-col justify-between gap-4 mb-8 lg:flex-row lg:items-center">
-
         <div className="flex items-center gap-3">
-
           <div className="flex items-center justify-center text-white bg-blue-600 h-11 w-11 rounded-xl">
             <FiSliders size={22} />
           </div>
@@ -377,34 +459,30 @@ function WhatIf() {
             </h1>
 
             <p className="text-sm text-slate-500">
-              Stress-test chartering decisions under changing market
-              and operational conditions
+              Stress-test chartering decisions under changing
+              market and operational conditions
             </p>
           </div>
-
         </div>
 
         <div className="px-4 py-3 bg-white border rounded-lg border-slate-200">
-
           <p className="text-xs text-slate-500">
-            Scenario
+            Active Analysis
           </p>
 
           <p className="mt-1 text-sm font-semibold text-slate-800">
-            C5 • {cargoQuantity.toLocaleString()} MT
+            {analysis?.route || "--"} •{" "}
+            {Number(
+              analysis?.cargo_quantity || 0
+            ).toLocaleString()}{" "}
+            MT
           </p>
-
         </div>
-
       </div>
 
-
-      {/* ==================================================
-          CURRENT ANALYSIS
-      ================================================== */}
+      {/* CURRENT ANALYSIS */}
 
       <div className="p-5 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
-
         <div className="grid grid-cols-1 gap-5 md:grid-cols-5">
 
           <div>
@@ -413,7 +491,8 @@ function WhatIf() {
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              {origin} → {destination}
+              {analysis?.origin || "--"} →{" "}
+              {analysis?.destination || "--"}
             </p>
           </div>
 
@@ -423,7 +502,10 @@ function WhatIf() {
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              {cargoQuantity.toLocaleString()} MT
+              {Number(
+                analysis?.cargo_quantity || 0
+              ).toLocaleString()}{" "}
+              MT
             </p>
           </div>
 
@@ -453,20 +535,15 @@ function WhatIf() {
             </p>
 
             <p className="mt-1 font-semibold text-slate-800">
-              {baseResult?.feasibility?.feasible_vessel_count ?? 0}
-              {" / "}
-              {baseResult?.feasibility?.total_vessels_checked ?? 0}
+              {baseFeasibleVessels} /{" "}
+              {baseTotalVessels}
             </p>
           </div>
 
         </div>
-
       </div>
 
-
-      {/* ==================================================
-          SCENARIO CONTROLS
-      ================================================== */}
+      {/* SCENARIO CONTROLS */}
 
       <div className="p-6 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
@@ -493,17 +570,14 @@ function WhatIf() {
 
         </div>
 
-
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
 
-          {/* Freight */}
+          {/* FREIGHT */}
 
           <div>
-
             <div className="flex items-center justify-between mb-3">
 
               <div className="flex items-center gap-2">
-
                 <FiTrendingUp
                   className="text-blue-600"
                   size={17}
@@ -512,7 +586,6 @@ function WhatIf() {
                 <span className="text-sm font-medium text-slate-700">
                   Freight Rate
                 </span>
-
               </div>
 
               <span className="font-bold text-blue-600">
@@ -528,7 +601,9 @@ function WhatIf() {
               max="30"
               value={freightChange}
               onChange={(e) =>
-                setFreightChange(Number(e.target.value))
+                setFreightChange(
+                  Number(e.target.value)
+                )
               }
               className="w-full accent-blue-600"
             />
@@ -538,18 +613,14 @@ function WhatIf() {
               <span>0%</span>
               <span>+30%</span>
             </div>
-
           </div>
 
-
-          {/* Delay */}
+          {/* DELAY */}
 
           <div>
-
             <div className="flex items-center justify-between mb-3">
 
               <div className="flex items-center gap-2">
-
                 <FiClock
                   className="text-amber-600"
                   size={17}
@@ -558,7 +629,6 @@ function WhatIf() {
                 <span className="text-sm font-medium text-slate-700">
                   Port / Vessel Delay
                 </span>
-
               </div>
 
               <span className="font-bold text-amber-600">
@@ -573,7 +643,9 @@ function WhatIf() {
               max="14"
               value={delayDays}
               onChange={(e) =>
-                setDelayDays(Number(e.target.value))
+                setDelayDays(
+                  Number(e.target.value)
+                )
               }
               className="w-full accent-amber-500"
             />
@@ -583,18 +655,14 @@ function WhatIf() {
               <span>7 days</span>
               <span>14 days</span>
             </div>
-
           </div>
 
-
-          {/* Fuel */}
+          {/* FUEL */}
 
           <div>
-
             <div className="flex items-center justify-between mb-3">
 
               <div className="flex items-center gap-2">
-
                 <FiDollarSign
                   className="text-slate-600"
                   size={17}
@@ -603,7 +671,6 @@ function WhatIf() {
                 <span className="text-sm font-medium text-slate-700">
                   Fuel Cost
                 </span>
-
               </div>
 
               <span className="font-bold text-slate-700">
@@ -619,7 +686,9 @@ function WhatIf() {
               max="30"
               value={fuelChange}
               onChange={(e) =>
-                setFuelChange(Number(e.target.value))
+                setFuelChange(
+                  Number(e.target.value)
+                )
               }
               className="w-full accent-slate-600"
             />
@@ -629,17 +698,12 @@ function WhatIf() {
               <span>0%</span>
               <span>+30%</span>
             </div>
-
           </div>
 
         </div>
-
       </div>
 
-
-      {/* ==================================================
-          BASE VS SCENARIO
-      ================================================== */}
+      {/* BASE VS SCENARIO */}
 
       <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
 
@@ -668,11 +732,9 @@ function WhatIf() {
 
           </div>
 
-
           <div className="grid grid-cols-2 gap-4">
 
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Freight
               </p>
@@ -684,12 +746,9 @@ function WhatIf() {
               <p className="text-xs text-slate-400">
                 per MT
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Expected Cost
               </p>
@@ -697,12 +756,9 @@ function WhatIf() {
               <p className="mt-2 text-xl font-bold text-slate-800">
                 {formatMillions(baseCost)}
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Risk
               </p>
@@ -718,12 +774,9 @@ function WhatIf() {
               >
                 {baseRiskLevel}
               </span>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-slate-50">
-
               <p className="text-xs text-slate-500">
                 Market Trend
               </p>
@@ -731,14 +784,11 @@ function WhatIf() {
               <p className="mt-2 text-xl font-bold text-slate-800">
                 {baseTrend}
               </p>
-
             </div>
 
           </div>
 
-
           <div className="p-4 mt-5 border rounded-lg border-amber-200 bg-amber-50">
-
             <p className="text-xs font-semibold text-amber-700">
               BASE DECISION
             </p>
@@ -746,11 +796,9 @@ function WhatIf() {
             <p className="mt-1 text-xl font-bold text-amber-700">
               {getDecisionLabel(baseDecision)}
             </p>
-
           </div>
 
         </div>
-
 
         {/* SCENARIO */}
 
@@ -777,11 +825,9 @@ function WhatIf() {
 
           </div>
 
-
           <div className="grid grid-cols-2 gap-4">
 
             <div className="p-4 rounded-lg bg-blue-50">
-
               <p className="text-xs text-slate-500">
                 Scenario Freight
               </p>
@@ -793,12 +839,9 @@ function WhatIf() {
               <p className="text-xs text-slate-400">
                 per MT
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-blue-50">
-
               <p className="text-xs text-slate-500">
                 Scenario Cost
               </p>
@@ -806,12 +849,9 @@ function WhatIf() {
               <p className="mt-2 text-xl font-bold text-slate-800">
                 {formatMillions(scenarioCost)}
               </p>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-blue-50">
-
               <p className="text-xs text-slate-500">
                 Scenario Risk
               </p>
@@ -827,12 +867,9 @@ function WhatIf() {
               >
                 {scenarioRiskLevel}
               </span>
-
             </div>
 
-
             <div className="p-4 rounded-lg bg-blue-50">
-
               <p className="text-xs text-slate-500">
                 Cost Impact
               </p>
@@ -849,16 +886,13 @@ function WhatIf() {
                 {costDifference > 0 ? "+" : ""}
                 {formatCurrency(costDifference)}
               </p>
-
             </div>
 
           </div>
 
-
           <div
             className={`mt-5 rounded-lg border p-4 ${scenarioDecisionStyle.bg} ${scenarioDecisionStyle.border}`}
           >
-
             <p
               className={`text-xs font-semibold ${scenarioDecisionStyle.text}`}
             >
@@ -866,32 +900,27 @@ function WhatIf() {
             </p>
 
             <div className="flex items-center gap-2 mt-1">
-
               {scenarioDecisionStyle.icon}
 
               <p
                 className={`text-xl font-bold ${scenarioDecisionStyle.text}`}
               >
-                {getDecisionLabel(scenarioDecision)}
+                {getDecisionLabel(
+                  scenarioDecision
+                )}
               </p>
-
             </div>
-
           </div>
 
         </div>
 
       </div>
 
-
-      {/* ==================================================
-          IMPACT COMPARISON
-      ================================================== */}
+      {/* IMPACT COMPARISON */}
 
       <div className="p-6 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
 
         <div className="mb-5">
-
           <h2 className="text-lg font-semibold text-slate-800">
             Scenario Impact
           </h2>
@@ -899,13 +928,11 @@ function WhatIf() {
           <p className="mt-1 text-sm text-slate-500">
             Quantified difference between the baseline and simulated scenario.
           </p>
-
         </div>
-
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 
-          {/* Freight Impact */}
+          {/* FREIGHT IMPACT */}
 
           <div className="p-4 border rounded-lg border-slate-100">
 
@@ -914,7 +941,6 @@ function WhatIf() {
             </p>
 
             <div className="flex items-center gap-3 mt-3">
-
               <span className="font-semibold text-slate-700">
                 {formatCurrency(baseForecast)}
               </span>
@@ -927,7 +953,6 @@ function WhatIf() {
               <span className="font-bold text-slate-800">
                 {formatCurrency(scenarioForecast)}
               </span>
-
             </div>
 
             <p
@@ -945,8 +970,7 @@ function WhatIf() {
 
           </div>
 
-
-          {/* Cost Impact */}
+          {/* COST IMPACT */}
 
           <div className="p-4 border rounded-lg border-slate-100">
 
@@ -955,7 +979,6 @@ function WhatIf() {
             </p>
 
             <div className="flex items-center gap-3 mt-3">
-
               <span className="font-semibold text-slate-700">
                 {formatMillions(baseCost)}
               </span>
@@ -968,7 +991,6 @@ function WhatIf() {
               <span className="font-bold text-slate-800">
                 {formatMillions(scenarioCost)}
               </span>
-
             </div>
 
             <p
@@ -986,8 +1008,7 @@ function WhatIf() {
 
           </div>
 
-
-          {/* Risk Impact */}
+          {/* RISK IMPACT */}
 
           <div className="p-4 border rounded-lg border-slate-100">
 
@@ -996,7 +1017,6 @@ function WhatIf() {
             </p>
 
             <div className="flex items-center gap-3 mt-3">
-
               <span className="font-semibold text-slate-700">
                 {baseRisk}
               </span>
@@ -1009,7 +1029,6 @@ function WhatIf() {
               <span className="font-bold text-slate-800">
                 {scenarioRisk}
               </span>
-
             </div>
 
             <p
@@ -1028,13 +1047,9 @@ function WhatIf() {
           </div>
 
         </div>
-
       </div>
 
-
-      {/* ==================================================
-          WHY DECISION CHANGED
-      ================================================== */}
+      {/* WHY DECISION CHANGED */}
 
       <div
         className={`mb-6 rounded-xl border p-6 ${
@@ -1056,24 +1071,22 @@ function WhatIf() {
             <FiActivity size={21} />
           </div>
 
-
           <div className="flex-1">
 
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
 
               <div>
-
                 <h2 className="text-lg font-semibold text-slate-800">
                   Why Did the Recommendation{" "}
-                  {decisionChanged ? "Change?" : "Stay the Same?"}
+                  {decisionChanged
+                    ? "Change?"
+                    : "Stay the Same?"}
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
                   Explainable decision-support output for procurement review.
                 </p>
-
               </div>
-
 
               <div
                 className={`rounded-full px-4 py-2 text-xs font-bold ${
@@ -1089,18 +1102,13 @@ function WhatIf() {
 
             </div>
 
-
             <p className="mt-5 text-sm leading-7 text-slate-700">
               {getDecisionExplanation()}
             </p>
 
-
-            {/* Changed assumptions */}
-
             <div className="grid grid-cols-1 gap-3 mt-5 md:grid-cols-3">
 
               <div className="p-3 rounded-lg bg-white/80">
-
                 <p className="text-xs text-slate-400">
                   Freight assumption
                 </p>
@@ -1109,12 +1117,9 @@ function WhatIf() {
                   {freightChange > 0 ? "+" : ""}
                   {freightChange}%
                 </p>
-
               </div>
 
-
               <div className="p-3 rounded-lg bg-white/80">
-
                 <p className="text-xs text-slate-400">
                   Delay assumption
                 </p>
@@ -1122,12 +1127,9 @@ function WhatIf() {
                 <p className="mt-1 text-sm font-semibold text-slate-700">
                   {delayDays} day(s)
                 </p>
-
               </div>
 
-
               <div className="p-3 rounded-lg bg-white/80">
-
                 <p className="text-xs text-slate-400">
                   Fuel assumption
                 </p>
@@ -1136,21 +1138,15 @@ function WhatIf() {
                   {fuelChange > 0 ? "+" : ""}
                   {fuelChange}%
                 </p>
-
               </div>
 
             </div>
 
           </div>
-
         </div>
-
       </div>
 
-
-      {/* ==================================================
-          SIH EXPLANATION
-      ================================================== */}
+      {/* PROCUREMENT EXPLANATION */}
 
       <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
 
@@ -1162,23 +1158,21 @@ function WhatIf() {
           />
 
           <div>
-
             <h3 className="text-sm font-semibold text-slate-800">
               Procurement Decision Support
             </h3>
 
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              What-If analysis helps procurement teams understand how
-              sensitive a chartering recommendation is to freight market
-              movements, fuel exposure and operational delays. The system
-              provides explainable decision support; final commercial
-              approval remains with the authorized procurement team.
+              What-If analysis helps procurement teams understand
+              how sensitive a chartering recommendation is to freight
+              market movements, fuel exposure and operational delays.
+              The system provides explainable decision support; final
+              commercial approval remains with the authorized
+              procurement team.
             </p>
-
           </div>
 
         </div>
-
       </div>
 
     </div>

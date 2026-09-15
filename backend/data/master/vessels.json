@@ -4,7 +4,7 @@
     "name": "MV Ocean Star",
     "vessel_type": "Capesize",
     "capacity_tonnes": 180000,
-    "draft_m": 17.5,
+    "draft_m": 15.8,
     "loa_m": 290,
     "beam_m": 45,
     "status": "AVAILABLE"
@@ -14,7 +14,7 @@
     "name": "MV Sea Falcon",
     "vessel_type": "Capesize",
     "capacity_tonnes": 150000,
-    "draft_m": 16.2,
+    "draft_m": 15.5,
     "loa_m": 275,
     "beam_m": 43,
     "status": "AVAILABLE"
@@ -37,6 +37,26 @@
     "draft_m": 13.2,
     "loa_m": 220,
     "beam_m": 32,
+    "status": "AVAILABLE"
+  },
+  {
+    "vessel_id": "VES-005",
+    "name": "MV Coastal Pioneer",
+    "vessel_type": "Capesize",
+    "capacity_tonnes": 120000,
+    "draft_m": 15.2,
+    "loa_m": 260,
+    "beam_m": 42,
+    "status": "AVAILABLE"
+  },
+  {
+    "vessel_id": "VES-006",
+    "name": "MV Eastern Voyager",
+    "vessel_type": "Panamax",
+    "capacity_tonnes": 105000,
+    "draft_m": 14.8,
+    "loa_m": 240,
+    "beam_m": 38,
     "status": "AVAILABLE"
   }
 ]
