@@ -1,0 +1,39 @@
+{
+    "dataset": "freight_data.csv",
+    "records": {
+        "initial": 30,
+        "processed": 30,
+        "removed": 0
+    },
+    "data_quality": {
+        "missing_values_before": 0,
+        "duplicate_rows": 0,
+        "invalid_dates": 0,
+        "invalid_source_dates": 0,
+        "invalid_freight_rates": 0,
+        "non_positive_freight_rates": 0,
+        "invalid_units": 0
+    },
+    "date_range": {
+        "start": "2026-01-20",
+        "end": "2026-09-07"
+    },
+    "routes": [
+        "AUS-PAR",
+        "IDN-KRI",
+        "IDN-PAR",
+        "IDN-SK-KRI",
+        "IDN-SK-PAR",
+        "ZAF-PAR"
+    ],
+    "vessel_types": [
+        "Panamax",
+        "Supramax"
+    ],
+    "forecasting_readiness": {
+        "records_available": 30,
+        "status": "READY_FOR_BASELINE_MODEL",
+        "note": "Current dataset is suitable for pipeline validation and prototype analysis, but it is too small for reliable production forecasting."
+    },
+    "status": "PASSED"
+}

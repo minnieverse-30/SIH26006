@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   FiArrowUpRight,
   FiAnchor,
@@ -40,7 +41,44 @@ function StatusBadge({ tone, children }) {
 function Dashboard() {
   const navigate = useNavigate();
 
+  const [forecast, setForecast] = useState(null);
+  const [forecastLoading, setForecastLoading] = useState(true);
+  const [forecastError, setForecastError] = useState("");
+
   const hour = new Date().getHours();
+
+  useEffect(() => {
+    const loadForecast = async () => {
+      try {
+        setForecastLoading(true);
+        setForecastError("");
+
+        const response = await fetch("http://127.0.0.1:8000/api/forecast", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            route: "AUS-PAR",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Forecast request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setForecast(data);
+      } catch (error) {
+        console.error("SAYLVI forecast error:", error);
+        setForecastError("Unable to load forecast");
+      } finally {
+        setForecastLoading(false);
+      }
+    };
+
+    loadForecast();
+  }, []);
   const greeting =
     hour < 12 ? "Good morning" :
     hour < 17 ? "Good afternoon" :
@@ -136,11 +174,51 @@ function Dashboard() {
             <div className="mt-5 rounded-xl bg-[#f5faff] p-4">
               <div className="flex items-center justify-between"><span className="text-xs font-semibold text-[#557594]">Book-now confidence</span><span className="text-sm font-extrabold text-[#234d75]">82%</span></div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#dbe8f2]"><div className="h-full w-[82%] rounded-full bg-[#25acd9]" /></div>
-              <p className="mt-3 text-[11px] leading-5 text-[#6d89a4]">Strongest signals are coming from freight outlook and vessel availability. Final recommendations should be validated against live market data.</p>
-            </div>
+<p className="mt-3 text-[11px] leading-5 text-[#6d89a4]">
+  {forecastLoading
+    ? "Loading the latest ML freight forecast..."
+    : forecastError
+      ? "Forecast service is currently unavailable."
+      : `ML forecast for AUS-PAR: ${forecast.forecast_freight_rate}. Expected range: ${forecast.forecast_range?.lower} – ${forecast.forecast_range?.upper}.`}
+</p>            </div>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-3">
-              <div className="rounded-xl border border-[#e8f0f6] bg-white p-3"><FiTrendingUp className="text-[#1b96d7]" size={16} /><p className="mt-2 text-xs font-medium text-[#7892aa]">Freight trend</p><p className="text-sm font-extrabold text-[#2374ad]">Increasing</p><p className="mt-2 text-[10px] font-bold text-[#12ad7f]">+5.8%</p></div>
-              <div className="rounded-xl border border-[#e8f0f6] bg-white p-3"><FiAnchor className="text-[#1b96d7]" size={16} /><p className="mt-2 text-xs font-medium text-[#7892aa]">Vessel availability</p><p className="text-sm font-extrabold text-[#2374ad]">High</p><p className="mt-2 text-[10px] font-bold text-[#12ad7f]">+12%</p></div>
+<div className="rounded-xl border border-[#e8f0f6] bg-white p-3">
+  <FiTrendingUp className="text-[#1b96d7]" size={16} />
+
+  <p className="mt-2 text-xs font-medium text-[#7892aa]">
+    ML freight forecast
+  </p>
+
+  {forecastLoading ? (
+    <>
+      <p className="text-sm font-extrabold text-[#2374ad]">
+        Loading...
+      </p>
+      <p className="mt-2 text-[10px] font-bold text-[#8aa1b7]">
+        Random Forest
+      </p>
+    </>
+  ) : forecastError ? (
+    <>
+      <p className="text-sm font-extrabold text-[#2374ad]">
+        Unavailable
+      </p>
+      <p className="mt-2 text-[10px] font-bold text-[#d88a00]">
+        API error
+      </p>
+    </>
+  ) : (
+    <>
+      <p className="text-sm font-extrabold text-[#2374ad]">
+        {forecast?.forecast_freight_rate ?? "--"}
+      </p>
+
+      <p className="mt-2 text-[10px] font-bold text-[#12ad7f]">
+        Forecast rate
+      </p>
+    </>
+  )}
+</div>              <div className="rounded-xl border border-[#e8f0f6] bg-white p-3"><FiAnchor className="text-[#1b96d7]" size={16} /><p className="mt-2 text-xs font-medium text-[#7892aa]">Vessel availability</p><p className="text-sm font-extrabold text-[#2374ad]">High</p><p className="mt-2 text-[10px] font-bold text-[#12ad7f]">+12%</p></div>
               <div className="rounded-xl border border-[#e8f0f6] bg-white p-3"><FiAlertTriangle className="text-[#2374ad]" size={16} /><p className="mt-2 text-xs font-medium text-[#7892aa]">Delay risk</p><p className="text-sm font-extrabold text-[#2374ad]">Low</p><p className="mt-2 text-[10px] font-bold text-[#12ad7f]">8%</p></div>
             </div>
           </div>

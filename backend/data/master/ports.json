@@ -1,0 +1,131 @@
+[
+  {
+    "port_id": "PORT-001",
+    "name": "Paradip",
+    "country": "India",
+    "state": "Odisha",
+    "max_draft_m": 16.0,
+    "max_loa_m": 300,
+    "max_beam_m": 46,
+    "supported_vessel_types": [
+      "Capesize",
+      "Panamax"
+    ],
+    "supported_cargo_types": [
+      "Coking Coal",
+      "Thermal Coal",
+      "Iron Ore",
+      "Steel"
+    ]
+  },
+  {
+    "port_id": "PORT-002",
+    "name": "Dhamra",
+    "country": "India",
+    "state": "Odisha",
+    "max_draft_m": 18.0,
+    "max_loa_m": 300,
+    "max_beam_m": 46,
+    "supported_vessel_types": [
+      "Capesize",
+      "Panamax"
+    ],
+    "supported_cargo_types": [
+      "Coking Coal",
+      "Thermal Coal",
+      "Iron Ore"
+    ]
+  },
+  {
+    "port_id": "PORT-003",
+    "name": "Visakhapatnam",
+    "country": "India",
+    "state": "Andhra Pradesh",
+    "max_draft_m": 14.5,
+    "max_loa_m": 300,
+    "max_beam_m": 46,
+    "supported_vessel_types": [
+      "Capesize",
+      "Panamax"
+    ],
+    "supported_cargo_types": [
+      "Coking Coal",
+      "Thermal Coal",
+      "Iron Ore",
+      "Steel"
+    ]
+  },
+  {
+    "port_id": "PORT-004",
+    "name": "Gangavaram",
+    "country": "India",
+    "state": "Andhra Pradesh",
+    "max_draft_m": 18.0,
+    "max_loa_m": 300,
+    "max_beam_m": 46,
+    "supported_vessel_types": [
+      "Capesize",
+      "Panamax"
+    ],
+    "supported_cargo_types": [
+      "Coking Coal",
+      "Thermal Coal",
+      "Iron Ore"
+    ]
+  },
+  {
+    "port_id": "PORT-005",
+    "name": "Kamarajar",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "max_draft_m": 18.0,
+    "max_loa_m": 340,
+    "max_beam_m": 50,
+    "supported_vessel_types": [
+      "Capesize",
+      "Panamax"
+    ],
+    "supported_cargo_types": [
+      "Coking Coal",
+      "Thermal Coal",
+      "Iron Ore"
+    ]
+  },
+  {
+    "port_id": "PORT-006",
+    "name": "Chennai",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "max_draft_m": 16.0,
+    "max_loa_m": 300,
+    "max_beam_m": 46,
+    "supported_vessel_types": [
+      "Panamax",
+      "Capesize"
+    ],
+    "supported_cargo_types": [
+      "Coal",
+      "Iron Ore",
+      "Steel",
+      "Bulk Cargo"
+    ]
+  },
+  {
+    "port_id": "PORT-007",
+    "name": "Haldia",
+    "country": "India",
+    "state": "West Bengal",
+    "max_draft_m": 12.5,
+    "max_loa_m": 250,
+    "max_beam_m": 40,
+    "supported_vessel_types": [
+      "Panamax"
+    ],
+    "supported_cargo_types": [
+      "Coal",
+      "Iron Ore",
+      "Steel",
+      "Bulk Cargo"
+    ]
+  }
+]
