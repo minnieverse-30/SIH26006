@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   FiDollarSign,
   FiTrendingUp,
@@ -5,55 +6,209 @@ import {
   FiCheckCircle,
   FiArrowRight,
   FiInfo,
+  FiRefreshCw,
 } from "react-icons/fi";
 
 function CostComparison() {
-  const options = [
-    {
-      vessel: "MV SAIL Horizon",
-      freight: 2025000,
-      fuel: 310000,
-      port: 95000,
-      idle: 45000,
-      risk: 28000,
-      total: 2503000,
-      riskLevel: "Low",
-      recommended: true,
-    },
-    {
-      vessel: "MV Ocean Carrier",
-      freight: 2060000,
-      fuel: 325000,
-      port: 98000,
-      idle: 52000,
-      risk: 35000,
-      total: 2570000,
-      riskLevel: "Low",
-      recommended: false,
-    },
-    {
-      vessel: "MV Eastern Star",
-      freight: 2190000,
-      fuel: 345000,
-      port: 102000,
-      idle: 85000,
-      risk: 62000,
-      total: 2784000,
-      riskLevel: "Medium",
-      recommended: false,
-    },
-  ];
+  const [costData, setCostData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const formatCurrency = (value) => {
-    return `$${value.toLocaleString("en-US")}`;
+  const route = "AUS-PAR";
+  const cargoQuantity = 100000;
+
+  const analysisId =
+    sessionStorage.getItem("sailForgeAnalysisId") || "--";
+
+  // ===============================
+  // Fetch Cost Data
+  // ===============================
+
+  const fetchCost = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams({
+        route,
+        cargo_quantity: cargoQuantity,
+        fuel_cost: 500000,
+        port_cost: 150000,
+        idle_cost: 100000,
+        risk_cost: 200000,
+      });
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/cost?${params.toString()}`
+      );
+
+      const data = await response.json();
+
+      console.log("COST RESPONSE:", data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail || "Failed to load cost data"
+        );
+      }
+
+      setCostData(data.data);
+    } catch (err) {
+      console.error("COST ERROR:", err);
+
+      setError(
+        err.message || "Unable to load cost analysis."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetchCost();
+  }, []);
+
+  // ===============================
+  // Formatters
+  // ===============================
+
+  const formatCurrency = (value) => {
+    if (value === undefined || value === null) {
+      return "--";
+    }
+
+    return `$${Number(value).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  const formatMillions = (value) => {
+    if (value === undefined || value === null) {
+      return "--";
+    }
+
+    return `$${(Number(value) / 1000000).toFixed(3)}M`;
+  };
+
+  const formatThousands = (value) => {
+    if (value === undefined || value === null) {
+      return "--";
+    }
+
+    return `$${(Number(value) / 1000).toFixed(1)}K`;
+  };
+
+  // ===============================
+  // Loading
+  // ===============================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-8 bg-slate-100">
+        <div className="flex min-h-[500px] items-center justify-center">
+          <div className="text-center">
+            <FiRefreshCw
+              className="mx-auto mb-4 text-blue-600 animate-spin"
+              size={30}
+            />
+
+            <p className="font-medium text-slate-700">
+              Loading cost analysis...
+            </p>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Fetching latest backend cost calculation
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===============================
+  // Error
+  // ===============================
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-8 bg-slate-100">
+        <div className="max-w-2xl p-8 mx-auto text-center bg-white border border-red-200 shadow-sm rounded-xl">
+          <FiAlertTriangle
+            className="mx-auto mb-4 text-red-500"
+            size={35}
+          />
+
+          <h2 className="text-xl font-bold text-slate-800">
+            Unable to load cost analysis
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-500">
+            {error}
+          </p>
+
+          <button
+            onClick={fetchCost}
+            className="inline-flex items-center gap-2 px-5 py-3 mt-6 text-sm font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            <FiRefreshCw size={16} />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!costData) {
+    return null;
+  }
+
+  // ===============================
+  // Cost Values
+  // ===============================
+
+  const breakdown = costData.cost_breakdown || {};
+
+  const totalCost = Number(
+    costData.total_expected_cost || 0
+  );
+
+  const freightCost = Number(
+    breakdown.freight_cost || 0
+  );
+
+  const fuelCost = Number(
+    breakdown.fuel_cost || 0
+  );
+
+  const portCost = Number(
+    breakdown.port_cost || 0
+  );
+
+  const idleCost = Number(
+    breakdown.idle_cost || 0
+  );
+
+  const riskCost = Number(
+    breakdown.risk_cost || 0
+  );
+
+  const extraCosts =
+    fuelCost +
+    portCost +
+    idleCost +
+    riskCost;
+
   return (
-    <div className="min-h-screen bg-slate-100 p-8">
+    <div className="min-h-screen p-8 bg-slate-100">
+
       {/* Header */}
-      <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+
+      <div className="flex flex-col justify-between gap-4 mb-8 lg:flex-row lg:items-center">
+
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white">
+
+          <div className="flex items-center justify-center text-white bg-blue-600 h-11 w-11 rounded-xl">
             <FiDollarSign size={22} />
           </div>
 
@@ -66,197 +221,455 @@ function CostComparison() {
               Compare total expected chartering cost and risk
             </p>
           </div>
+
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500">Analysis ID</p>
-          <p className="mt-1 text-sm font-semibold text-slate-800">
-            ANL-1024
+        <div className="px-4 py-3 bg-white border rounded-lg border-slate-200">
+
+          <p className="text-xs text-slate-500">
+            Analysis ID
           </p>
+
+          <p className="mt-1 text-sm font-semibold text-slate-800">
+            {analysisId}
+          </p>
+
         </div>
+
+      </div>
+
+      {/* Route Information */}
+
+      <div className="p-5 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
+
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+
+          <div>
+
+            <p className="text-xs tracking-wide uppercase text-slate-400">
+              Current Analysis
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-slate-800">
+              Route {costData.route}
+            </h2>
+
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+
+            <div className="px-4 py-2 rounded-lg bg-slate-50">
+
+              <p className="text-xs text-slate-500">
+                Cargo
+              </p>
+
+              <p className="text-sm font-semibold text-slate-800">
+                {Number(cargoQuantity).toLocaleString()} MT
+              </p>
+
+            </div>
+
+            <div className="px-4 py-2 rounded-lg bg-slate-50">
+
+              <p className="text-xs text-slate-500">
+                Forecast Rate
+              </p>
+
+              <p className="text-sm font-semibold text-slate-800">
+                {formatCurrency(
+                  costData.forecast_freight_rate
+                )}
+                /MT
+              </p>
+
+            </div>
+
+            <div className="px-4 py-2 rounded-lg bg-slate-50">
+
+              <p className="text-xs text-slate-500">
+                Model
+              </p>
+
+              <p className="text-sm font-semibold text-slate-800">
+                {costData.model_status || "BASELINE"}
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
       {/* Cost Summary */}
-      <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Recommended Vessel</p>
 
-          <h2 className="mt-2 text-xl font-bold text-slate-800">
-            MV SAIL Horizon
+      <div className="grid grid-cols-1 gap-5 mb-6 md:grid-cols-3">
+
+        <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+
+          <p className="text-sm text-slate-500">
+            Total Expected Cost
+          </p>
+
+          <h2 className="mt-2 text-2xl font-bold text-slate-800">
+            {formatMillions(totalCost)}
           </h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Highest overall value
+            Based on current forecast
           </p>
+
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Lowest Total Cost</p>
+        <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+
+          <p className="text-sm text-slate-500">
+            Expected Cost / MT
+          </p>
 
           <h2 className="mt-2 text-2xl font-bold text-slate-800">
-            $2.503M
+            {formatCurrency(
+              costData.expected_cost_per_tonne
+            )}
           </h2>
 
-          <p className="mt-1 flex items-center gap-1 text-xs font-medium text-green-600">
+          <p className="flex items-center gap-1 mt-1 text-xs font-medium text-blue-600">
             <FiTrendingUp size={13} />
-            2.6% below next best option
+            Current forecast basis
           </p>
+
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Cost Risk Exposure</p>
+        <div className="p-5 bg-white border shadow-sm rounded-xl border-slate-200">
+
+          <p className="text-sm text-slate-500">
+            Risk Exposure
+          </p>
 
           <h2 className="mt-2 text-2xl font-bold text-slate-800">
-            $28K
+            {formatThousands(riskCost)}
           </h2>
 
-          <p className="mt-1 text-xs font-medium text-green-600">
-            Low risk exposure
+          <p className="mt-1 text-xs font-medium text-amber-600">
+            Current configured risk cost
           </p>
+
         </div>
+
       </div>
 
-      {/* Recommended Option */}
-      <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-5">
+      {/* Current Cost Assessment */}
+
+      <div className="p-5 mb-6 border border-green-200 rounded-xl bg-green-50">
+
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+
           <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-green-600 text-white">
+
+            <div className="flex items-center justify-center text-white bg-green-600 rounded-lg h-11 w-11 shrink-0">
               <FiCheckCircle size={22} />
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
-                Best Overall Option
+
+              <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
+                Current Cost Assessment
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-slate-800">
-                MV SAIL Horizon
+                Route {costData.route}
               </h2>
 
               <p className="mt-1 text-sm text-slate-600">
-                Lowest total expected cost with low operational risk.
+                Current expected cost is calculated using the
+                forecast freight rate and configured cost
+                components.
               </p>
+
             </div>
+
           </div>
 
           <div className="text-left lg:text-right">
-            <p className="text-xs text-slate-500">Total Expected Cost</p>
-            <p className="text-2xl font-bold text-green-700">
-              $2.503M
+
+            <p className="text-xs text-slate-500">
+              Total Expected Cost
             </p>
+
+            <p className="text-2xl font-bold text-green-700">
+              {formatMillions(totalCost)}
+            </p>
+
           </div>
+
         </div>
+
       </div>
 
-      {/* Comparison Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
+      {/* Cost Breakdown */}
+
+      <div className="bg-white border shadow-sm rounded-xl border-slate-200">
+
+        <div className="p-6 border-b border-slate-200">
+
           <h2 className="text-lg font-semibold text-slate-800">
             Total Cost Breakdown
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Estimated cost includes freight, fuel, port charges,
-            idle/demurrage and risk exposure.
+            Estimated cost includes freight, fuel, port
+            charges, idle/demurrage and risk exposure.
           </p>
+
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px] text-left">
+
+          <table className="w-full min-w-[800px] text-left">
+
             <thead className="bg-slate-50">
-              <tr className="text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-6 py-4">Vessel</th>
-                <th className="px-6 py-4">Freight</th>
-                <th className="px-6 py-4">Fuel</th>
-                <th className="px-6 py-4">Port / Handling</th>
-                <th className="px-6 py-4">Idle / Demurrage</th>
-                <th className="px-6 py-4">Risk Exposure</th>
-                <th className="px-6 py-4">Total Cost</th>
-                <th className="px-6 py-4">Risk</th>
+
+              <tr className="text-xs tracking-wide uppercase text-slate-500">
+
+                <th className="px-6 py-4">
+                  Cost Component
+                </th>
+
+                <th className="px-6 py-4">
+                  Amount
+                </th>
+
+                <th className="px-6 py-4">
+                  Per MT
+                </th>
+
+                <th className="px-6 py-4">
+                  Status
+                </th>
+
               </tr>
+
             </thead>
 
             <tbody>
-              {options.map((option) => (
-                <tr
-                  key={option.vessel}
-                  className={`border-t border-slate-100 ${
-                    option.recommended ? "bg-green-50/40" : ""
-                  }`}
-                >
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      {option.recommended && (
-                        <FiCheckCircle
-                          className="text-green-600"
-                          size={17}
-                        />
-                      )}
 
-                      <div>
-                        <p className="font-semibold text-slate-800">
-                          {option.vessel}
-                        </p>
+              {/* Freight */}
 
-                        {option.recommended && (
-                          <p className="mt-1 text-xs font-medium text-green-600">
-                            Recommended
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
+              <tr className="border-t border-slate-100">
 
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {formatCurrency(option.freight)}
-                  </td>
+                <td className="px-6 py-5">
 
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {formatCurrency(option.fuel)}
-                  </td>
+                  <p className="font-semibold text-slate-800">
+                    Freight Cost
+                  </p>
 
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {formatCurrency(option.port)}
-                  </td>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Forecast freight rate × cargo quantity
+                  </p>
 
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {formatCurrency(option.idle)}
-                  </td>
+                </td>
 
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {formatCurrency(option.risk)}
-                  </td>
+                <td className="px-6 py-5 text-sm font-semibold text-slate-700">
+                  {formatCurrency(freightCost)}
+                </td>
 
-                  <td className="px-6 py-5 text-sm font-bold text-slate-800">
-                    {formatCurrency(option.total)}
-                  </td>
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(
+                    costData.forecast_freight_rate
+                  )}
+                </td>
 
-                  <td className="px-6 py-5">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        option.riskLevel === "Low"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
-                      {option.riskLevel}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                <td className="px-6 py-5">
+
+                  <span className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                    Forecast Based
+                  </span>
+
+                </td>
+
+              </tr>
+
+              {/* Fuel */}
+
+              <tr className="border-t border-slate-100">
+
+                <td className="px-6 py-5">
+
+                  <p className="font-semibold text-slate-800">
+                    Fuel Cost
+                  </p>
+
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(fuelCost)}
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(
+                    fuelCost / cargoQuantity
+                  )}
+                </td>
+
+                <td className="px-6 py-5">
+
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
+                    Configured
+                  </span>
+
+                </td>
+
+              </tr>
+
+              {/* Port */}
+
+              <tr className="border-t border-slate-100">
+
+                <td className="px-6 py-5">
+
+                  <p className="font-semibold text-slate-800">
+                    Port / Handling
+                  </p>
+
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(portCost)}
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(
+                    portCost / cargoQuantity
+                  )}
+                </td>
+
+                <td className="px-6 py-5">
+
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
+                    Configured
+                  </span>
+
+                </td>
+
+              </tr>
+
+              {/* Idle */}
+
+              <tr className="border-t border-slate-100">
+
+                <td className="px-6 py-5">
+
+                  <p className="font-semibold text-slate-800">
+                    Idle / Demurrage
+                  </p>
+
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(idleCost)}
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(
+                    idleCost / cargoQuantity
+                  )}
+                </td>
+
+                <td className="px-6 py-5">
+
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
+                    Configured
+                  </span>
+
+                </td>
+
+              </tr>
+
+              {/* Risk */}
+
+              <tr className="border-t border-slate-100">
+
+                <td className="px-6 py-5">
+
+                  <p className="font-semibold text-slate-800">
+                    Risk Exposure
+                  </p>
+
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(riskCost)}
+                </td>
+
+                <td className="px-6 py-5 text-sm text-slate-700">
+                  {formatCurrency(
+                    riskCost / cargoQuantity
+                  )}
+                </td>
+
+                <td className="px-6 py-5">
+
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                    Risk Input
+                  </span>
+
+                </td>
+
+              </tr>
+
+              {/* Total */}
+
+              <tr className="border-t-2 border-slate-200 bg-slate-50">
+
+                <td className="px-6 py-5">
+
+                  <p className="font-bold text-slate-800">
+                    Total Expected Cost
+                  </p>
+
+                </td>
+
+                <td className="px-6 py-5 text-lg font-bold text-slate-900">
+                  {formatCurrency(totalCost)}
+                </td>
+
+                <td className="px-6 py-5 text-lg font-bold text-slate-900">
+                  {formatCurrency(
+                    costData.expected_cost_per_tonne
+                  )}
+                </td>
+
+                <td className="px-6 py-5">
+
+                  <span className="px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                    Calculated
+                  </span>
+
+                </td>
+
+              </tr>
+
             </tbody>
+
           </table>
+
         </div>
 
         {/* Formula */}
-        <div className="border-t border-slate-200 bg-slate-50 px-6 py-5">
+
+        <div className="px-6 py-5 border-t border-slate-200 bg-slate-50">
+
           <div className="flex items-start gap-3">
+
             <FiInfo
               className="mt-0.5 shrink-0 text-blue-600"
               size={18}
             />
 
             <div>
+
               <p className="text-sm font-semibold text-slate-700">
                 Total Expected Cost
               </p>
@@ -265,46 +678,69 @@ function CostComparison() {
                 Freight + Fuel + Port / Handling + Idle /
                 Demurrage + Risk Exposure
               </p>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
 
-      {/* Decision Insight */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      {/* Cost Insight */}
+
+      <div className="p-6 mt-6 bg-white border shadow-sm rounded-xl border-slate-200">
+
         <div className="flex items-start gap-3">
+
           <FiAlertTriangle
             className="mt-0.5 text-amber-500"
             size={20}
           />
 
           <div>
+
             <h3 className="text-sm font-semibold text-slate-800">
               Cost Optimization Insight
             </h3>
 
-            <p className="mt-1 max-w-4xl text-sm leading-6 text-slate-500">
-              Although MV Pacific Trader may offer a lower base freight
-              rate, vessel and port constraints can increase the overall
-              exposure. The recommended option considers total expected
-              cost rather than freight rate alone.
+            <p className="max-w-4xl mt-1 text-sm leading-6 text-slate-500">
+              The current estimate is primarily driven by
+              the forecast freight rate. Additional fuel,
+              port, idle and risk costs are incorporated
+              into the backend calculation for this
+              analysis.
             </p>
+
+            {extraCosts === 0 && (
+              <p className="mt-2 text-xs font-medium text-amber-600">
+                Note: Fuel, port, idle and risk inputs are
+                currently configured as zero for this analysis.
+              </p>
+            )}
+
           </div>
+
         </div>
+
       </div>
 
       {/* Continue */}
-      <div className="mt-6 flex justify-end">
+
+      <div className="flex justify-end mt-6">
+
         <button
           onClick={() => {
             window.location.href = "/decision";
           }}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
         >
           View Final Decision
           <FiArrowRight size={17} />
         </button>
+
       </div>
+
     </div>
   );
 }

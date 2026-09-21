@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import {
   FiAnchor,
   FiCheckCircle,
@@ -5,70 +7,149 @@ import {
   FiMapPin,
   FiCalendar,
   FiArrowRight,
+  FiRefreshCw,
 } from "react-icons/fi";
 
 function VesselMatch() {
-  const vessels = [
-    {
-      name: "MV SAIL Horizon",
-      type: "Capesize",
-      capacity: "82,000 MT",
-      draft: "17.2 m",
-      loa: "290 m",
-      availability: "12 Oct 2026",
-      match: 96,
-      portStatus: "Compatible",
-      risk: "Low",
-      freight: "$40.5 / MT",
-    },
-    {
-      name: "MV Ocean Carrier",
-      type: "Capesize",
-      capacity: "76,000 MT",
-      draft: "16.8 m",
-      loa: "285 m",
-      availability: "14 Oct 2026",
-      match: 91,
-      portStatus: "Compatible",
-      risk: "Low",
-      freight: "$41.2 / MT",
-    },
-    {
-      name: "MV Eastern Star",
-      type: "Panamax",
-      capacity: "64,000 MT",
-      draft: "14.5 m",
-      loa: "225 m",
-      availability: "18 Oct 2026",
-      match: 82,
-      portStatus: "Compatible",
-      risk: "Medium",
-      freight: "$43.8 / MT",
-    },
-    {
-      name: "MV Pacific Trader",
-      type: "Capesize",
-      capacity: "88,000 MT",
-      draft: "18.1 m",
-      loa: "300 m",
-      availability: "20 Oct 2026",
-      match: 68,
-      portStatus: "Draft Review",
-      risk: "Medium",
-      freight: "$39.8 / MT",
-    },
-  ];
+  // ==============================
+  // ANALYSIS INPUT
+  // ==============================
+
+  const cargoQuantity = 100000;
+  const origin = "Hay Point";
+  const destination = "Paradip";
+
+  // ==============================
+  // STATE
+  // ==============================
+
+  const [vessels, setVessels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // ==============================
+  // FETCH VESSELS
+  // ==============================
+
+  const fetchVessels = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams({
+        cargo_quantity: String(cargoQuantity),
+        origin: origin,
+        destination: destination,
+      });
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/vessels/feasibility?${params.toString()}`
+      );
+
+      const data = await response.json();
+
+      console.log("VESSEL FEASIBILITY RESPONSE:", data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail || "Failed to load vessel data"
+        );
+      }
+
+      setVessels(data.data?.vessels || []);
+    } catch (err) {
+      console.error("Vessel feasibility error:", err);
+
+      setError(
+        err.message || "Unable to load vessel data"
+      );
+
+      setVessels([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVessels();
+  }, []);
+
+  // ==============================
+  // DERIVED DATA
+  // ==============================
+
+  const feasibleVessels = vessels.filter(
+    (vessel) => vessel.status === "FEASIBLE"
+  );
+
+  const recommendedVessel =
+    feasibleVessels.length > 0
+      ? feasibleVessels[0]
+      : null;
+
+  // ==============================
+  // CHECK HELPERS
+  // ==============================
+
+  const getCheckCount = (vessel) => {
+    if (!vessel.checks) return 0;
+
+    return Object.values(vessel.checks).filter(Boolean).length;
+  };
+
+  const getTotalChecks = (vessel) => {
+    if (!vessel.checks) return 0;
+
+    return Object.keys(vessel.checks).length;
+  };
+
+  const getMatchScore = (vessel) => {
+    const total = getTotalChecks(vessel);
+
+    if (total === 0) return 0;
+
+    const passed = getCheckCount(vessel);
+
+    return Math.round((passed / total) * 100);
+  };
+
+  const getRisk = (vessel) => {
+    if (vessel.status === "FEASIBLE") {
+      return "Low";
+    }
+
+    const failedChecks = vessel.checks
+      ? Object.values(vessel.checks).filter(
+          (value) => !value
+        ).length
+      : 0;
+
+    if (failedChecks >= 3) {
+      return "High";
+    }
+
+    return "Medium";
+  };
+
+  // ==============================
+  // RENDER
+  // ==============================
 
   return (
-    <div className="min-h-screen bg-slate-100 p-8">
-      {/* Header */}
-      <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div className="min-h-screen p-8 bg-slate-100">
+
+      {/* HEADER */}
+
+      <div className="flex flex-col justify-between gap-4 mb-8 lg:flex-row lg:items-center">
+
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white">
+
+          <div className="flex items-center justify-center text-white bg-blue-600 h-11 w-11 rounded-xl">
             <FiAnchor size={22} />
           </div>
 
           <div>
+
             <h1 className="text-2xl font-bold text-slate-800">
               Vessel Match
             </h1>
@@ -76,237 +157,608 @@ function VesselMatch() {
             <p className="text-sm text-slate-500">
               AI-assisted vessel and port compatibility analysis
             </p>
+
           </div>
+
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500">Analysis ID</p>
-          <p className="mt-1 text-sm font-semibold text-slate-800">
-            ANL-1024
+        <div className="px-4 py-3 bg-white border rounded-lg border-slate-200">
+
+          <p className="text-xs text-slate-500">
+            Analysis Route
           </p>
+
+          <p className="mt-1 text-sm font-semibold text-slate-800">
+            {origin} → {destination}
+          </p>
+
         </div>
+
       </div>
 
-      {/* Request Summary */}
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+      {/* ERROR */}
+
+      {error && (
+
+        <div className="flex items-center justify-between gap-4 p-4 mb-6 border border-red-200 rounded-xl bg-red-50">
+
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+
+            <p className="font-semibold text-red-700">
+              Unable to load vessel data
+            </p>
+
+            <p className="mt-1 text-sm text-red-600">
+              {error}
+            </p>
+
+          </div>
+
+          <button
+            onClick={fetchVessels}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
+          >
+            <FiRefreshCw size={15} />
+            Retry
+          </button>
+
+        </div>
+
+      )}
+
+      {/* REQUEST SUMMARY */}
+
+      <div className="p-5 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+
+          <div>
+
+            <p className="text-xs tracking-wide uppercase text-slate-500">
               Cargo
             </p>
+
             <p className="mt-1 font-semibold text-slate-800">
               Coking Coal
             </p>
-            <p className="text-xs text-slate-500">50,000 MT</p>
+
+            <p className="text-xs text-slate-500">
+              {cargoQuantity.toLocaleString()} MT
+            </p>
+
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+
+            <p className="text-xs tracking-wide uppercase text-slate-500">
               Route
             </p>
-            <p className="mt-1 flex items-center gap-2 font-semibold text-slate-800">
+
+            <p className="flex items-center gap-2 mt-1 font-semibold text-slate-800">
               <FiMapPin size={15} />
-              Port Hedland → Paradip
+              {origin} → {destination}
             </p>
+
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Arrival Requirement
+
+            <p className="text-xs tracking-wide uppercase text-slate-500">
+              Vessel Screening
             </p>
-            <p className="mt-1 flex items-center gap-2 font-semibold text-slate-800">
+
+            <p className="flex items-center gap-2 mt-1 font-semibold text-slate-800">
               <FiCalendar size={15} />
-              15 Oct 2026
+              Current Availability
             </p>
+
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+
+            <p className="text-xs tracking-wide uppercase text-slate-500">
               Suitable Vessels
             </p>
+
             <p className="mt-1 font-semibold text-slate-800">
-              3 of 4
+
+              {loading
+                ? "Checking..."
+                : `${feasibleVessels.length} of ${vessels.length}`}
+
             </p>
+
           </div>
+
         </div>
+
       </div>
 
-      {/* Best Match */}
-      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <FiCheckCircle size={22} />
-            </div>
+      {/* LOADING */}
+
+      {loading && (
+
+        <div className="p-6 mb-6 border border-blue-200 rounded-xl bg-blue-50">
+
+          <div className="flex items-center gap-3">
+
+            <FiRefreshCw
+              size={22}
+              className="text-blue-600 animate-spin"
+            />
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                Recommended Vessel
+
+              <p className="font-semibold text-blue-800">
+                Screening vessels...
               </p>
 
-              <h2 className="mt-1 text-xl font-bold text-slate-800">
-                MV SAIL Horizon
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-600">
-                Highest compatibility with cargo, route and arrival
-                requirements.
+              <p className="mt-1 text-sm text-blue-600">
+                Checking vessel capacity and port compatibility.
               </p>
+
             </div>
+
           </div>
 
-          <div className="rounded-lg bg-white px-5 py-3 text-center shadow-sm">
-            <p className="text-xs text-slate-500">Match Score</p>
-            <p className="text-2xl font-bold text-blue-600">96%</p>
-          </div>
         </div>
-      </div>
 
-      {/* Vessel Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
+      )}
+
+      {/* BEST MATCH */}
+
+      {!loading && recommendedVessel && (
+
+        <div className="p-5 mb-6 border border-blue-200 rounded-xl bg-blue-50">
+
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+
+            <div className="flex items-start gap-4">
+
+              <div className="flex items-center justify-center text-white bg-blue-600 rounded-lg h-11 w-11 shrink-0">
+
+                <FiCheckCircle size={22} />
+
+              </div>
+
+              <div>
+
+                <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
+                  Recommended Vessel
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold text-slate-800">
+                  {recommendedVessel.vessel_name}
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-600">
+
+                  {recommendedVessel.vessel_type} with{" "}
+
+                  {recommendedVessel.capacity_tonnes?.toLocaleString()}{" "}
+
+                  tonnes capacity meets the current screening criteria.
+
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="px-5 py-3 text-center bg-white rounded-lg shadow-sm">
+
+              <p className="text-xs text-slate-500">
+                Compatibility
+              </p>
+
+              <p className="text-2xl font-bold text-blue-600">
+                {getMatchScore(recommendedVessel)}%
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* NO FEASIBLE VESSEL */}
+
+      {!loading &&
+        !error &&
+        vessels.length > 0 &&
+        feasibleVessels.length === 0 && (
+
+          <div className="p-5 mb-6 border rounded-xl border-amber-200 bg-amber-50">
+
+            <div className="flex items-start gap-3">
+
+              <FiAlertTriangle
+                size={22}
+                className="mt-0.5 text-amber-600"
+              />
+
+              <div>
+
+                <p className="font-semibold text-amber-800">
+                  No feasible vessel found
+                </p>
+
+                <p className="mt-1 text-sm text-amber-700">
+                  None of the screened vessels currently satisfies
+                  all cargo, port and availability constraints.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+      {/* VESSEL TABLE */}
+
+      <div className="bg-white border shadow-sm rounded-xl border-slate-200">
+
+        <div className="p-6 border-b border-slate-200">
+
           <h2 className="text-lg font-semibold text-slate-800">
             Vessel Compatibility
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Ranked based on capacity, port constraints, availability,
-            freight and operational risk.
+            Ranked using vessel capacity, port constraints,
+            availability and compatibility checks.
           </p>
+
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-left">
+
+          <table className="w-full min-w-[1000px] text-left">
+
             <thead className="bg-slate-50">
-              <tr className="text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-6 py-4">Vessel</th>
-                <th className="px-6 py-4">Capacity</th>
-                <th className="px-6 py-4">Draft</th>
-                <th className="px-6 py-4">LOA</th>
-                <th className="px-6 py-4">Availability</th>
-                <th className="px-6 py-4">Port Status</th>
-                <th className="px-6 py-4">Risk</th>
-                <th className="px-6 py-4">Freight</th>
-                <th className="px-6 py-4">Match</th>
+
+              <tr className="text-xs tracking-wide uppercase text-slate-500">
+
+                <th className="px-6 py-4">
+                  Vessel
+                </th>
+
+                <th className="px-6 py-4">
+                  Capacity
+                </th>
+
+                <th className="px-6 py-4">
+                  Status
+                </th>
+
+                <th className="px-6 py-4">
+                  Risk
+                </th>
+
+                <th className="px-6 py-4">
+                  Capacity Check
+                </th>
+
+                <th className="px-6 py-4">
+                  Draft
+                </th>
+
+                <th className="px-6 py-4">
+                  LOA
+                </th>
+
+                <th className="px-6 py-4">
+                  Beam
+                </th>
+
+                <th className="px-6 py-4">
+                  Vessel Type
+                </th>
+
+                <th className="px-6 py-4">
+                  Match
+                </th>
+
               </tr>
+
             </thead>
 
             <tbody>
-              {vessels.map((vessel, index) => (
-                <tr
-                  key={vessel.name}
-                  className={`border-t border-slate-100 ${
-                    index === 0 ? "bg-blue-50/40" : ""
-                  }`}
-                >
-                  {/* Vessel */}
-                  <td className="px-6 py-5">
-                    <div>
-                      <p className="font-semibold text-slate-800">
-                        {vessel.name}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {vessel.type}
-                      </p>
-                    </div>
-                  </td>
 
-                  {/* Capacity */}
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {vessel.capacity}
-                  </td>
+              {!loading &&
+                vessels.map((vessel) => {
 
-                  {/* Draft */}
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {vessel.draft}
-                  </td>
+                  const matchScore =
+                    getMatchScore(vessel);
 
-                  {/* LOA */}
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {vessel.loa}
-                  </td>
+                  const risk =
+                    getRisk(vessel);
 
-                  {/* Availability */}
-                  <td className="px-6 py-5 text-sm text-slate-700">
-                    {vessel.availability}
-                  </td>
+                  const checks =
+                    vessel.checks || {};
 
-                  {/* Port */}
-                  <td className="px-6 py-5">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        vessel.portStatus === "Compatible"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
+                  return (
+
+                    <tr
+                      key={vessel.vessel_id}
+                      className={`border-t border-slate-100 ${
+                        vessel.status === "FEASIBLE"
+                          ? "bg-blue-50/30"
+                          : ""
                       }`}
                     >
-                      {vessel.portStatus}
-                    </span>
-                  </td>
 
-                  {/* Risk */}
-                  <td className="px-6 py-5">
-                    <span
-                      className={`flex w-fit items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
-                        vessel.risk === "Low"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                      {/* VESSEL */}
+
+                      <td className="px-6 py-5">
+
+                        <div>
+
+                          <p className="font-semibold text-slate-800">
+                            {vessel.vessel_name}
+                          </p>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            {vessel.vessel_type}
+                          </p>
+
+                          <p className="mt-1 text-[11px] text-slate-400">
+                            ID: {vessel.vessel_id}
+                          </p>
+
+                        </div>
+
+                      </td>
+
+                      {/* CAPACITY */}
+
+                      <td className="px-6 py-5 text-sm text-slate-700">
+
+                        {vessel.capacity_tonnes?.toLocaleString()} MT
+
+                      </td>
+
+                      {/* STATUS */}
+
+                      <td className="px-6 py-5">
+
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            vessel.status === "FEASIBLE"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+
+                          {vessel.status === "FEASIBLE"
+                            ? "Feasible"
+                            : "Not Feasible"}
+
+                        </span>
+
+                      </td>
+
+                      {/* RISK */}
+
+                      <td className="px-6 py-5">
+
+                        <span
+                          className={`flex w-fit items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
+                            risk === "Low"
+                              ? "bg-green-100 text-green-700"
+                              : risk === "Medium"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+
+                          {risk !== "Low" && (
+                            <FiAlertTriangle size={12} />
+                          )}
+
+                          {risk}
+
+                        </span>
+
+                      </td>
+
+                      {/* CAPACITY CHECK */}
+
+                      <td className="px-6 py-5">
+
+                        {checks.capacity ? (
+                          <FiCheckCircle
+                            className="text-green-600"
+                            size={18}
+                          />
+                        ) : (
+                          <FiAlertTriangle
+                            className="text-red-500"
+                            size={18}
+                          />
+                        )}
+
+                      </td>
+
+                      {/* DRAFT */}
+
+                      <td className="px-6 py-5">
+
+                        {checks.destination_draft ? (
+                          <FiCheckCircle
+                            className="text-green-600"
+                            size={18}
+                          />
+                        ) : (
+                          <FiAlertTriangle
+                            className="text-red-500"
+                            size={18}
+                          />
+                        )}
+
+                      </td>
+
+                      {/* LOA */}
+
+                      <td className="px-6 py-5">
+
+                        {checks.destination_loa ? (
+                          <FiCheckCircle
+                            className="text-green-600"
+                            size={18}
+                          />
+                        ) : (
+                          <FiAlertTriangle
+                            className="text-red-500"
+                            size={18}
+                          />
+                        )}
+
+                      </td>
+
+                      {/* BEAM */}
+
+                      <td className="px-6 py-5">
+
+                        {checks.destination_beam ? (
+                          <FiCheckCircle
+                            className="text-green-600"
+                            size={18}
+                          />
+                        ) : (
+                          <FiAlertTriangle
+                            className="text-red-500"
+                            size={18}
+                          />
+                        )}
+
+                      </td>
+
+                      {/* VESSEL TYPE */}
+
+                      <td className="px-6 py-5">
+
+                        {checks.destination_vessel_type ? (
+                          <FiCheckCircle
+                            className="text-green-600"
+                            size={18}
+                          />
+                        ) : (
+                          <FiAlertTriangle
+                            className="text-red-500"
+                            size={18}
+                          />
+                        )}
+
+                      </td>
+
+                      {/* MATCH */}
+
+                      <td className="px-6 py-5">
+
+                        <div className="flex items-center gap-3">
+
+                          <div className="w-20 h-2 overflow-hidden rounded-full bg-slate-200">
+
+                            <div
+                              className="h-full bg-blue-600 rounded-full"
+                              style={{
+                                width: `${matchScore}%`,
+                              }}
+                            />
+
+                          </div>
+
+                          <span className="text-sm font-semibold text-slate-800">
+                            {matchScore}%
+                          </span>
+
+                        </div>
+
+                      </td>
+
+                    </tr>
+
+                  );
+                })}
+
+              {/* EMPTY */}
+
+              {!loading &&
+                !error &&
+                vessels.length === 0 && (
+
+                  <tr>
+
+                    <td
+                      colSpan="10"
+                      className="px-6 py-12 text-center"
                     >
-                      {vessel.risk !== "Low" && (
-                        <FiAlertTriangle size={12} />
-                      )}
-                      {vessel.risk}
-                    </span>
-                  </td>
 
-                  {/* Freight */}
-                  <td className="px-6 py-5 text-sm font-semibold text-slate-800">
-                    {vessel.freight}
-                  </td>
+                      <FiAlertTriangle
+                        className="mx-auto mb-3 text-slate-400"
+                        size={28}
+                      />
 
-                  {/* Match */}
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-full rounded-full bg-blue-600"
-                          style={{ width: `${vessel.match}%` }}
-                        />
-                      </div>
+                      <p className="font-medium text-slate-700">
+                        No vessel data available
+                      </p>
 
-                      <span className="text-sm font-semibold text-slate-800">
-                        {vessel.match}%
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      <p className="mt-1 text-sm text-slate-500">
+                        Try refreshing the analysis.
+                      </p>
+
+                    </td>
+
+                  </tr>
+
+                )}
+
             </tbody>
+
           </table>
+
         </div>
 
-        {/* Table Footer */}
-        <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+        {/* TABLE FOOTER */}
+
+        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
+
           <p className="text-xs text-slate-500">
-            Match score considers vessel capacity, draft, LOA, port
-            compatibility, availability, freight and operational risk.
+
+            Compatibility is calculated from vessel capacity,
+            destination port draft, LOA, beam, vessel type
+            and current availability.
+
           </p>
+
         </div>
+
       </div>
 
-      {/* Next Action */}
-      <div className="mt-6 flex justify-end">
+      {/* NEXT ACTION */}
+
+      <div className="flex justify-end mt-6">
+
         <button
           onClick={() => {
-            window.location.href = "/cost-comparison";
+            window.location.href = "/vessel-tracking";
           }}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
         >
-          Compare Total Cost
+
+          Track Vessels
+
           <FiArrowRight size={17} />
+
         </button>
+
       </div>
+
     </div>
   );
 }

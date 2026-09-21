@@ -1,34 +1,55 @@
-import { FiBell, FiChevronDown, FiMenu } from "react-icons/fi";
+import { FiBell, FiUser } from "react-icons/fi";
 
 function Header() {
   return (
-    <header className="fixed left-0 right-0 top-0 z-20 h-20 border-b border-[#e3edf6] bg-white/95 backdrop-blur lg:left-64">
-      <div className="flex h-full items-center justify-between px-4 sm:px-6 lg:px-7">
-        <div className="flex items-center gap-3">
-          <button className="rounded-lg p-2 text-[#51708e] hover:bg-[#f2f8fd] lg:hidden" aria-label="Open navigation">
-            <FiMenu size={20} />
-          </button>
-          <div>
-            <p className="text-[11px] font-semibold text-[#41688f] sm:text-xs">Welcome back, Explorer 🌊</p>
-            <h2 className="mt-0.5 text-sm font-semibold text-[#6b87a3] sm:text-[13px]">Smarter shipping decisions. Greater possibilities.</h2>
-          </div>
+    <header className="fixed left-64 right-0 top-0 z-10 h-20 border-b border-slate-200 bg-white">
+
+      <div className="flex h-full items-center justify-between px-8">
+
+        {/* Left */}
+        <div>
+          <p className="text-sm text-slate-500">
+            Decision Support System
+          </p>
+
+          <h2 className="text-lg font-semibold text-slate-800">
+            Freight & Vessel Intelligence
+          </h2>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-5">
-          <button className="relative rounded-lg p-2 text-[#52708d] transition hover:bg-[#f2f8fd]" aria-label="Notifications">
+
+        {/* Right */}
+        <div className="flex items-center gap-5">
+
+          <button className="relative text-slate-500 hover:text-slate-800">
             <FiBell size={20} />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-rose-400 ring-2 ring-white" />
+
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />
           </button>
-          <div className="flex items-center gap-2.5 border-l border-[#e7eef5] pl-3 sm:pl-5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#174e82] text-xs font-bold text-white">PU</div>
-            <div className="hidden sm:block">
-              <p className="text-xs font-bold text-[#284e74]">Procurement User</p>
-              <p className="text-[10px] text-[#7892aa]">SAIL Operations</p>
+
+
+          <div className="flex items-center gap-3 border-l border-slate-200 pl-5">
+
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+              <FiUser size={18} />
             </div>
-            <FiChevronDown className="hidden text-[#7892aa] sm:block" size={15} />
+
+            <div>
+              <p className="text-sm font-medium text-slate-800">
+                Procurement User
+              </p>
+
+              <p className="text-xs text-slate-500">
+                SAIL
+              </p>
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
     </header>
   );
 }
