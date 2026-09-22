@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   FiFileText,
@@ -48,7 +49,7 @@ function Reports() {
       // ---------------------------------------------
       if (analysisId) {
         const analysisResponse = await fetch(
-          `http://127.0.0.1:8000/api/analyses/${analysisId}`
+          `${API_BASE_URL}/api/analyses/${analysisId}`
         );
 
         const analysisData = await analysisResponse.json();
@@ -84,7 +85,7 @@ function Reports() {
       });
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/decision?${params.toString()}`
+        `${API_BASE_URL}/api/decision?${params.toString()}`
       );
 
       const data = await response.json();
