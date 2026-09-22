@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 
 import {
@@ -40,7 +41,7 @@ function Dashboard() {
       }
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/analyses/${analysisId}`,
+        `${API_BASE_URL}/api/analyses/${analysisId}`,
         {
           method: "GET",
           headers: {
