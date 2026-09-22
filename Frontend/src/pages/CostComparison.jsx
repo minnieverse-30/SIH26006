@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   FiDollarSign,
@@ -39,7 +40,7 @@ function CostComparison() {
       });
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/cost?${params.toString()}`
+        `${API_BASE_URL}/api/cost?${params.toString()}`
       );
 
       const data = await response.json();
