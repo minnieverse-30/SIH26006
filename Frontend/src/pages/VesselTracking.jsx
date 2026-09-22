@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   MapContainer,
@@ -53,7 +54,7 @@ function VesselTracking() {
       setError("");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/vessels/tracking"
+        "${API_BASE_URL}/api/vessels/tracking"
       );
 
       const result = await response.json();
