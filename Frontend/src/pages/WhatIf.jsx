@@ -107,6 +107,7 @@ function WhatIf() {
         cargo_quantity: currentAnalysis.cargo_quantity,
         freight_change_percent: freightChange,
         fuel_change_percent: fuelChange,
+        fuel_cost: currentAnalysis.fuel_cost ?? 0,
         port_delay_days: delayDays,
         vessel_availability:
           currentAnalysis.vessel_availability || "HIGH",
