@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -40,7 +41,7 @@ function Decision() {
         setAnalysisId(storedAnalysisId);
 
         const analysisResponse = await fetch(
-          `http://127.0.0.1:8000/api/analyses/${storedAnalysisId}`
+          `${API_BASE_URL}/api/analyses/${storedAnalysisId}`
         );
 
         if (!analysisResponse.ok) {
@@ -83,7 +84,7 @@ function Decision() {
       });
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/decision?${params.toString()}`
+        `${API_BASE_URL}/api/decision?${params.toString()}`
       );
 
       if (!response.ok) {
