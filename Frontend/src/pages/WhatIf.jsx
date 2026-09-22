@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   FiSliders,
@@ -43,7 +44,7 @@ function WhatIf() {
 
       if (analysisId) {
         const analysisResponse = await fetch(
-          `http://127.0.0.1:8000/api/analyses/${analysisId}`
+          `${API_BASE_URL}/api/analyses/${analysisId}`
         );
 
         const analysisData = await analysisResponse.json();
@@ -116,10 +117,10 @@ function WhatIf() {
       const [baseResponse, scenarioResponse] =
         await Promise.all([
           fetch(
-            `http://127.0.0.1:8000/api/decision?${baseParams.toString()}`
+            `${API_BASE_URL}/api/decision?${baseParams.toString()}`
           ),
           fetch(
-            `http://127.0.0.1:8000/api/what-if?${scenarioParams.toString()}`
+            `${API_BASE_URL}/api/what-if?${scenarioParams.toString()}`
           ),
         ]);
 
