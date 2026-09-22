@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useState } from "react";
 import {
   FiArrowRight,
@@ -92,7 +93,7 @@ function NewAnalysis() {
       // -----------------------------
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/analyses?${params.toString()}`,
+        `${API_BASE_URL}/api/analyses?${params.toString()}`,
         {
           method: "POST",
           headers: {
