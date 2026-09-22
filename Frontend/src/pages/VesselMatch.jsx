@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 
 import {
@@ -43,7 +44,7 @@ function VesselMatch() {
       });
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/vessels/feasibility?${params.toString()}`
+        `${API_BASE_URL}/api/vessels/feasibility?${params.toString()}`
       );
 
       const data = await response.json();
