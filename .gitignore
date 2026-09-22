@@ -225,3 +225,6 @@ dist/
 .env
 .env.*
 !.env.example
+# Local database state
+*.db
+*.db-journal
