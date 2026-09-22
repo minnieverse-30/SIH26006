@@ -430,15 +430,13 @@ def decision_support(
 
         )
 
-    except Exception as error:
-
-        print("DECISION ERROR:", repr(error))
+    except Exception:
 
         raise HTTPException(
 
             status_code=500,
 
-            detail=str(error)
+            detail="Unable to generate decision support."
 
         )
 
@@ -460,6 +458,8 @@ def what_if_analysis(
 
     fuel_change_percent: float = 0.0,
 
+    fuel_cost: float = 0.0,
+
     port_delay_days: float = 0.0,
 
     vessel_availability: str = "AVAILABLE",
@@ -479,6 +479,8 @@ def what_if_analysis(
             freight_change_percent=freight_change_percent,
 
             fuel_change_percent=fuel_change_percent,
+
+            fuel_cost=fuel_cost,
 
             port_delay_days=port_delay_days,
 
