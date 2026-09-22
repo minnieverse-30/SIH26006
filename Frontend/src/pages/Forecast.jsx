@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   FiAlertCircle,
@@ -31,7 +32,7 @@ function Forecast() {
       setError("");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/forecast?route=${encodeURIComponent(
+        `${API_BASE_URL}/api/forecast?route=${encodeURIComponent(
           selectedRoute
         )}`
       );
