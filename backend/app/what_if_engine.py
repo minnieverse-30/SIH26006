@@ -8,12 +8,15 @@ def run_what_if(
     cargo_quantity: float,
     freight_change_percent: float = 0.0,
     fuel_change_percent: float = 0.0,
+    fuel_cost: float = 0.0,
     port_delay_days: float = 0.0,
     vessel_availability: str = "AVAILABLE",
     contract_flexibility: str = "FLEXIBLE"
 ):
     if cargo_quantity <= 0:
         raise ValueError("Cargo quantity must be greater than zero.")
+    if fuel_cost < 0:
+        raise ValueError("Fuel cost cannot be negative.")
 
     # ========================================================
     # 1. BASE FORECAST
@@ -38,7 +41,8 @@ def run_what_if(
 
     base_cost = calculate_cost(
         route=route,
-        cargo_quantity=cargo_quantity
+        cargo_quantity=cargo_quantity,
+        fuel_cost=fuel_cost
     )
 
     base_total_cost = base_cost["total_expected_cost"]
@@ -64,7 +68,7 @@ def run_what_if(
     # 5. FUEL IMPACT
     # ========================================================
 
-    base_fuel_cost = 0.0
+    base_fuel_cost = float(fuel_cost)
 
     scenario_fuel_cost = (
         base_fuel_cost
