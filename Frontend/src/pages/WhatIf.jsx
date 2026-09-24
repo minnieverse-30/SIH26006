@@ -35,7 +35,7 @@ function WhatIf() {
       let currentAnalysis;
 
       const analysisId = sessionStorage.getItem(
-        "sailForgeAnalysisId"
+        "saylivAnalysisId"
       );
 
       // --------------------------------------------------
