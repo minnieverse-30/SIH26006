@@ -21,7 +21,7 @@ function Reports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const analysisId = sessionStorage.getItem("sailForgeAnalysisId");
+  const analysisId = sessionStorage.getItem("saylivAnalysisId");
 
   const fallbackAnalysis = {
     route: "AUS-PAR",
@@ -297,7 +297,7 @@ function Reports() {
 
           <div>
             <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase">
-              SAIL-FORGE
+              SAYLIV
             </p>
 
             <h1 className="mt-1 text-2xl font-bold text-slate-800">
@@ -1000,7 +1000,7 @@ function Reports() {
         <div className="flex flex-col justify-between gap-3 text-xs text-slate-400 md:flex-row">
 
           <p>
-            SAIL-FORGE • AI-Powered Freight Forecasting & Vessel
+            SAYLIV • AI-Powered Freight Forecasting & Vessel
             Chartering Decision Support System
           </p>
 
