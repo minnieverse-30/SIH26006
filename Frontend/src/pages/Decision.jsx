@@ -32,7 +32,7 @@ function Decision() {
       setError("");
 
       const storedAnalysisId = sessionStorage.getItem(
-        "sailForgeAnalysisId"
+        "saylivAnalysisId"
       );
 
       let analysis;
@@ -262,7 +262,7 @@ function Decision() {
         <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="mb-1 text-sm font-medium text-cyan-400">
-              SAIL-FORGE / DECISION ENGINE
+              SAYLIV / DECISION ENGINE
             </p>
 
             <h1 className="text-3xl font-bold">
@@ -666,7 +666,7 @@ function Decision() {
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div>
             <p className="text-sm text-slate-500">
-              SAIL-FORGE Decision Support
+              SAYLIV Decision Support
             </p>
 
             <p className="mt-1 text-xs text-slate-600">
