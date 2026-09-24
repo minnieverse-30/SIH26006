@@ -19,7 +19,7 @@ function CostComparison() {
   const cargoQuantity = 100000;
 
   const analysisId =
-    sessionStorage.getItem("sailForgeAnalysisId") || "--";
+    sessionStorage.getItem("saylivAnalysisId") || "--";
 
   // ===============================
   // Fetch Cost Data
