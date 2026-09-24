@@ -22,7 +22,7 @@ function Dashboard() {
   const [error, setError] = useState("");
 
   // ============================================================
-  // LOAD SAVED ANALYSIS FROM POSTGRESQL
+  // LOAD SAVED ANALYSIS FROM DATABASE
   // ============================================================
 
   const loadDashboard = async () => {
@@ -687,7 +687,7 @@ function Dashboard() {
               </h2>
 
               <p className="text-xs text-slate-500">
-                Saved analysis from PostgreSQL
+                Saved analysis from the configured database
               </p>
             </div>
 
@@ -733,7 +733,7 @@ function Dashboard() {
               </span>
 
               <span className="px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                POSTGRESQL
+                DATABASE
               </span>
             </div>
 
