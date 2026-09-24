@@ -67,6 +67,7 @@ def generate_decision(
 
     risk_level = risk["risk_level"]
     trend = forecast["trend"]
+    cost_efficiency = cost["cost_efficiency_score"]
 
     # ========================================================
     # 5. EXPLAINABLE DECISION SCORE
@@ -90,6 +91,24 @@ def generate_decision(
             "factor": "Vessel feasibility",
             "impact": 15,
             "reason": f"{len(feasible_vessels)} feasible vessel option(s) are available."
+        })
+
+    if cost_efficiency >= 85:
+        decision_score += 10
+        decision_factors.append({
+            "factor": "Cost efficiency", "impact": 10,
+            "reason": "Expected cost has relatively low non-freight exposure."
+        })
+    elif cost_efficiency < 70:
+        decision_score -= 10
+        decision_factors.append({
+            "factor": "Cost efficiency", "impact": -10,
+            "reason": "Additional operational and risk costs create higher cost exposure."
+        })
+    else:
+        decision_factors.append({
+            "factor": "Cost efficiency", "impact": 0,
+            "reason": "Cost exposure is within the moderate range."
         })
 
     if risk_level == "HIGH":
