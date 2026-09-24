@@ -69,59 +69,102 @@ def generate_decision(
     trend = forecast["trend"]
 
     # ========================================================
-    # 5. DECISION LOGIC
+    # 5. EXPLAINABLE DECISION SCORE
     # ========================================================
 
-    reasons = []
+    # The decision remains rule-based, but now combines multiple
+    # independently explainable signals instead of relying on trend alone.
+    # Score is directional: higher means stronger case to book now.
+    decision_score = 50
+    decision_factors = []
 
-    # No feasible vessel
     if len(feasible_vessels) == 0:
-
-        decision = "AVOID"
-
-        reasons.append(
-            "No feasible vessel was found for the selected "
-            "cargo and route constraints."
-        )
-
-    # High risk
-    elif risk_level == "HIGH":
-
-        decision = "WAIT"
-
-        reasons.append(
-            "Current operational and market risk is high."
-        )
-
-    # Rising freight market
-    elif trend == "RISING":
-
-        decision = "BOOK"
-
-        reasons.append(
-            "Freight rates are showing a rising trend, "
-            "so delaying the charter may increase cost."
-        )
-
-    # Falling freight market
-    elif trend == "FALLING":
-
-        decision = "WAIT"
-
-        reasons.append(
-            "Freight rates are showing a falling trend, "
-            "so waiting may provide a better rate."
-        )
-
-    # Stable market
+        decision_score = 0
+        decision_factors.append({
+            "factor": "Vessel feasibility",
+            "impact": -50,
+            "reason": "No vessel satisfies the current cargo and route constraints."
+        })
     else:
+        decision_factors.append({
+            "factor": "Vessel feasibility",
+            "impact": 15,
+            "reason": f"{len(feasible_vessels)} feasible vessel option(s) are available."
+        })
 
+    if risk_level == "HIGH":
+        decision_score -= 30
+        decision_factors.append({
+            "factor": "Operational risk",
+            "impact": -30,
+            "reason": "Current risk level is high."
+        })
+    elif risk_level == "MEDIUM":
+        decision_score -= 15
+        decision_factors.append({
+            "factor": "Operational risk",
+            "impact": -15,
+            "reason": "Current risk level is medium."
+        })
+    else:
+        decision_score += 10
+        decision_factors.append({
+            "factor": "Operational risk",
+            "impact": 10,
+            "reason": "Current risk level is low."
+        })
+
+    if trend == "RISING":
+        decision_score += 25
+        decision_factors.append({
+            "factor": "Freight trend",
+            "impact": 25,
+            "reason": "Freight rates are rising, increasing the potential cost of delay."
+        })
+    elif trend == "FALLING":
+        decision_score -= 20
+        decision_factors.append({
+            "factor": "Freight trend",
+            "impact": -20,
+            "reason": "Freight rates are falling, so waiting may provide a lower rate."
+        })
+    elif trend == "STABLE":
+        decision_factors.append({
+            "factor": "Freight trend",
+            "impact": 0,
+            "reason": "Freight rates are relatively stable."
+        })
+    else:
+        decision_score -= 10
+        decision_factors.append({
+            "factor": "Freight trend",
+            "impact": -10,
+            "reason": "There is insufficient historical data to establish a reliable trend."
+        })
+
+    if forecast["confidence"] == "HIGH":
+        decision_score += 10
+    elif forecast["confidence"] == "LOW":
+        decision_score -= 10
+
+    decision_factors.append({
+        "factor": "Forecast confidence",
+        "impact": 10 if forecast["confidence"] == "HIGH" else (-10 if forecast["confidence"] == "LOW" else 0),
+        "reason": f'Forecast confidence is {forecast["confidence"].lower()}.'
+    })
+
+    decision_score = max(0, min(100, decision_score))
+
+    if len(feasible_vessels) == 0:
+        decision = "AVOID"
+    elif decision_score >= 65:
         decision = "BOOK"
+    elif decision_score <= 40:
+        decision = "WAIT"
+    else:
+        decision = "WAIT"
 
-        reasons.append(
-            "Market conditions are relatively stable and "
-            "feasible vessel options are available."
-        )
+    reasons = [factor["reason"] for factor in decision_factors]
 
     # ========================================================
     # 6. ADDITIONAL REASONS
@@ -165,7 +208,7 @@ def generate_decision(
 
         "decision": decision,
 
-        "decision_confidence": decision_confidence,
+        "decision_confidence": decision_confidence,\n\n        "decision_score": decision_score,\n\n        "decision_factors": decision_factors,
 
         "route": route,
 
@@ -205,7 +248,7 @@ def generate_decision(
 
             "total_expected_cost": cost["total_expected_cost"],
 
-            "expected_cost_per_tonne": cost["expected_cost_per_tonne"],
+            "expected_cost_per_tonne": cost["expected_cost_per_tonne"],\n\n            "breakdown": cost["cost_breakdown"],
 
             "currency": cost["currency"]
 
