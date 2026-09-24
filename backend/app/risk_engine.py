@@ -32,6 +32,7 @@ def calculate_risk(
     risk_score = 0
 
     risk_factors = []
+    risk_categories = []
 
     # ============================================================
     # 1. FREIGHT RISK
@@ -41,21 +42,17 @@ def calculate_risk(
 
         risk_score += 25
 
-        risk_factors.append({
-            "factor": "Freight Forecast",
-            "level": "MEDIUM",
-            "reason": "Historical freight data is limited."
-        })
+        factor = {"factor": "Freight Forecast", "category": "MARKET", "level": "MEDIUM", "impact": 25, "reason": "Historical freight data is limited."}
+        risk_factors.append(factor)
+        risk_categories.append("MARKET")
 
     if forecast["trend"] == "RISING":
 
         risk_score += 20
 
-        risk_factors.append({
-            "factor": "Freight Trend",
-            "level": "HIGH",
-            "reason": "Freight rates are showing a rising trend."
-        })
+        factor = {"factor": "Freight Trend", "category": "MARKET", "level": "HIGH", "impact": 20, "reason": "Freight rates are showing a rising trend."}
+        risk_factors.append(factor)
+        risk_categories.append("MARKET")
 
     # ============================================================
     # 2. PORT DELAY RISK
@@ -65,21 +62,17 @@ def calculate_risk(
 
         risk_score += 25
 
-        risk_factors.append({
-            "factor": "Port Delay",
-            "level": "HIGH",
-            "reason": "Expected port delay is significant."
-        })
+        factor = {"factor": "Port Delay", "category": "OPERATIONAL", "level": "HIGH", "impact": 25, "reason": "Expected port delay is significant."}
+        risk_factors.append(factor)
+        risk_categories.append("OPERATIONAL")
 
     elif port_delay_days >= 2:
 
         risk_score += 15
 
-        risk_factors.append({
-            "factor": "Port Delay",
-            "level": "MEDIUM",
-            "reason": "Moderate port delay may affect the charter."
-        })
+        factor = {"factor": "Port Delay", "category": "OPERATIONAL", "level": "MEDIUM", "impact": 15, "reason": "Moderate port delay may affect the charter."}
+        risk_factors.append(factor)
+        risk_categories.append("OPERATIONAL")
 
     # ============================================================
     # 3. VESSEL AVAILABILITY RISK
@@ -91,39 +84,31 @@ def calculate_risk(
 
         risk_score += 20
 
-        risk_factors.append({
-            "factor": "Vessel Availability",
-            "level": "HIGH",
-            "reason": "Suitable vessel availability is currently limited."
-        })
+        factor = {"factor": "Vessel Availability", "category": "VESSEL", "level": "HIGH", "impact": 20, "reason": "Suitable vessel availability is currently limited."}
+        risk_factors.append(factor)
+        risk_categories.append("VESSEL")
 
     elif availability == "MEDIUM":
 
         risk_score += 10
 
-        risk_factors.append({
-            "factor": "Vessel Availability",
-            "level": "MEDIUM",
-            "reason": "Moderate vessel availability may limit chartering options."
-        })
+        factor = {"factor": "Vessel Availability", "category": "VESSEL", "level": "MEDIUM", "impact": 10, "reason": "Moderate vessel availability may limit chartering options."}
+        risk_factors.append(factor)
+        risk_categories.append("VESSEL")
 
     elif availability == "HIGH":
 
-        risk_factors.append({
-            "factor": "Vessel Availability",
-            "level": "LOW",
-            "reason": "Suitable vessel availability is currently high."
-        })
+        factor = {"factor": "Vessel Availability", "category": "VESSEL", "level": "LOW", "impact": 0, "reason": "Suitable vessel availability is currently high."}
+        risk_factors.append(factor)
+        risk_categories.append("VESSEL")
 
     else:
 
         risk_score += 20
 
-        risk_factors.append({
-            "factor": "Vessel Availability",
-            "level": "HIGH",
-            "reason": "Vessel availability information is unavailable or invalid."
-        })
+        factor = {"factor": "Vessel Availability", "category": "VESSEL", "level": "HIGH", "impact": 20, "reason": "Vessel availability information is unavailable or invalid."}
+        risk_factors.append(factor)
+        risk_categories.append("VESSEL")
 
     # ============================================================
     # 4. CONTRACT FLEXIBILITY RISK
@@ -135,14 +120,9 @@ def calculate_risk(
 
         risk_score += 10
 
-        risk_factors.append({
-            "factor": "Contract Flexibility",
-            "level": "MEDIUM",
-            "reason": (
-                "Fixed contracts provide less flexibility "
-                "if market conditions change."
-            )
-        })
+        factor = {"factor": "Contract Flexibility", "category": "COMMERCIAL", "level": "MEDIUM", "impact": 10, "reason": "Fixed contracts provide less flexibility if market conditions change."}
+        risk_factors.append(factor)
+        risk_categories.append("COMMERCIAL")
 
     # ============================================================
     # FINAL RISK LEVEL
@@ -174,7 +154,16 @@ def calculate_risk(
 
         "risk_level": risk_level,
 
+        "risk_categories": sorted(set(risk_categories)),
+
         "risk_factors": risk_factors,
+
+        "risk_summary": {
+            "market": sum(f["impact"] for f in risk_factors if f["category"] == "MARKET"),
+            "operational": sum(f["impact"] for f in risk_factors if f["category"] == "OPERATIONAL"),
+            "vessel": sum(f["impact"] for f in risk_factors if f["category"] == "VESSEL"),
+            "commercial": sum(f["impact"] for f in risk_factors if f["category"] == "COMMERCIAL")
+        },
 
         "forecast_confidence": forecast["confidence"],
 
