@@ -188,17 +188,16 @@ def generate_decision(
     # 7. CONFIDENCE
     # ========================================================
 
-    if forecast["confidence"] == "HIGH":
+    # Decision confidence reflects both forecast confidence and how clearly
+    # the combined score separates the recommendation from the middle range.
+    score_margin = abs(decision_score - 50)
 
+    if forecast["confidence"] == "HIGH" and score_margin >= 20:
         decision_confidence = "HIGH"
-
-    elif forecast["confidence"] == "MEDIUM":
-
-        decision_confidence = "MEDIUM"
-
-    else:
-
+    elif forecast["confidence"] == "LOW" or score_margin < 10:
         decision_confidence = "LOW"
+    else:
+        decision_confidence = "MEDIUM"
 
     # ========================================================
     # 8. FINAL RESPONSE
