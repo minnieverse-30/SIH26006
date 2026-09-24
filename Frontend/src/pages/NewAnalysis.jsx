@@ -128,7 +128,7 @@ function NewAnalysis() {
       // -----------------------------
 
       sessionStorage.setItem(
-        "sailForgeAnalysisId",
+        "saylivAnalysisId",
         String(analysisId)
       );
     } catch (err) {
@@ -136,7 +136,7 @@ function NewAnalysis() {
 
       setError(
         err.message ||
-          "Unable to connect to SAIL-FORGE backend."
+          "Unable to connect to SAYLIV backend."
       );
     } finally {
       setLoading(false);
@@ -565,7 +565,7 @@ function NewAnalysis() {
 
               <div>
                 <h2 className="font-bold">
-                  SAIL-FORGE Intelligence
+                  SAYLIV Intelligence
                 </h2>
 
                 <p className="text-xs text-slate-400">
