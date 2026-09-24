@@ -120,7 +120,7 @@ function Dashboard() {
           label: "BOOK NOW",
           bg: "bg-green-50",
           border: "border-green-200",
-          text: "text-blue-700",
+          text: "text-green-700",
           icon: FiCheckCircle,
         };
 
