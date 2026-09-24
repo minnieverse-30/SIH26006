@@ -84,6 +84,29 @@ def calculate_cost(
         total_cost / cargo_quantity
     )
 
+    additional_cost = fuel_cost + port_cost + idle_cost + risk_cost
+    freight_share = (freight_cost / total_cost * 100) if total_cost else 0.0
+    additional_share = (additional_cost / total_cost * 100) if total_cost else 0.0
+    cost_efficiency_score = max(0.0, min(100.0, 100.0 - additional_share))
+
+    cost_drivers = []
+    cost_drivers.append({
+        "factor": "Freight exposure",
+        "level": "HIGH" if freight_share >= 80 else "MEDIUM",
+        "reason": f"Freight represents {freight_share:.1f}% of expected cost."
+    })
+    for label, value in ((
+        ("Fuel cost", fuel_cost), ("Port cost", port_cost),
+        ("Idle cost", idle_cost), ("Risk cost", risk_cost)
+    )):
+        if value > 0:
+            share = value / total_cost * 100 if total_cost else 0
+            cost_drivers.append({
+                "factor": label,
+                "level": "HIGH" if share >= 15 else ("MEDIUM" if share >= 5 else "LOW"),
+                "reason": f"{label} contributes {share:.1f}% of expected cost."
+            })
+
     return {
         "route": route,
 
@@ -132,6 +155,15 @@ def calculate_cost(
             cost_per_tonne,
             2
         ),
+
+        "cost_efficiency_score": round(cost_efficiency_score, 1),
+
+        "cost_shares": {
+            "freight_percent": round(freight_share, 1),
+            "additional_percent": round(additional_share, 1)
+        },
+
+        "cost_drivers": cost_drivers,
 
         "currency": "USD",
 
