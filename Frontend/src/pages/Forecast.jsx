@@ -60,6 +60,9 @@ function Forecast() {
         unit: forecastData.unit,
         model_status: forecastData.model_status,
         method: forecastData.method,
+        historical_series: forecastData.historical_series || [],
+        model_metrics: forecastData.model_metrics || null,
+        forecast_explanation: forecastData.forecast_explanation || null,
       };
 
       setForecast(normalizedForecast);
@@ -115,21 +118,18 @@ function Forecast() {
     return "Insufficient historical data";
   };
 
-  const chartData =
-    forecast &&
-    Number.isFinite(latestRate) &&
-    Number.isFinite(forecastRate)
-      ? [
-          {
-            period: "Latest",
-            rate: latestRate,
-          },
-          {
-            period: "Forecast",
-            rate: forecastRate,
-          },
-        ]
-      : [];
+  const chartData = forecast
+    ? [
+        ...forecast.historical_series.map((point) => ({
+          period: point.date,
+          rate: point.rate,
+          type: "Historical",
+        })),
+        ...(Number.isFinite(forecastRate)
+          ? [{ period: "30-day forecast", rate: forecastRate, type: "Forecast" }]
+          : []),
+      ]
+    : [];
 
   return (
     <div className="space-y-6">
@@ -445,6 +445,46 @@ function Forecast() {
                     {forecast.observations || "--"}
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* MODEL PERFORMANCE */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">Validation MAE</p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {forecast.model_metrics?.validation_mae ?? "--"}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Lower is better</p>
+            </div>
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">Validation RMSE</p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {forecast.model_metrics?.validation_rmse ?? "--"}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Validation error metric</p>
+            </div>
+            <div className="p-5 border rounded-2xl border-slate-800 bg-slate-900">
+              <p className="text-sm text-slate-400">Data Coverage</p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {forecast.observations || "--"}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Historical route observations</p>
+            </div>
+          </div>
+
+          <div className="p-5 border rounded-2xl border-amber-500/20 bg-amber-500/5">
+            <div className="flex items-start gap-3">
+              <FiAlertCircle className="mt-1 text-amber-400" />
+              <div>
+                <p className="font-semibold text-white">Forecast Interpretation</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  {forecast.forecast_explanation?.caution || "Use the forecast with the available data context."}
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  {forecast.forecast_explanation?.uncertainty || "Forecast range represents uncertainty, not a formal prediction interval."}
+                </p>
               </div>
             </div>
           </div>
