@@ -120,7 +120,7 @@ function Dashboard() {
           label: "BOOK NOW",
           bg: "bg-green-50",
           border: "border-green-200",
-          text: "text-green-700",
+          text: "text-blue-700",
           icon: FiCheckCircle,
         };
 
@@ -342,8 +342,8 @@ function Dashboard() {
               </p>
 
               <p className="flex items-center gap-1.5 text-sm font-bold text-green-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-600" />
-                LIVE
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                ANALYSIS ACTIVE
               </p>
             </div>
 
