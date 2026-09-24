@@ -31,7 +31,7 @@ function Dashboard() {
       setError("");
 
       const analysisId = sessionStorage.getItem(
-        "sailForgeAnalysisId"
+        "saylivAnalysisId"
       );
 
       if (!analysisId) {
@@ -75,7 +75,7 @@ function Dashboard() {
 
       setError(
         err.message ||
-          "Unable to load SAIL-FORGE analysis."
+          "Unable to load SAYLIV analysis."
       );
     } finally {
       setLoading(false);
@@ -266,7 +266,7 @@ function Dashboard() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase">
-            SAIL-FORGE
+            SAYLIV
           </p>
 
           <h1 className="mt-1 text-2xl font-bold text-slate-800">
@@ -882,7 +882,7 @@ function Dashboard() {
             Procurement advisory:
           </strong>{" "}
 
-          SAIL-FORGE provides analytical decision support
+          SAYLIV provides analytical decision support
           based on available market, vessel, cost and risk
           data. Final charter approval, commercial negotiation
           and vessel nomination remain with the authorized
