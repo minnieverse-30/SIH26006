@@ -77,6 +77,34 @@ def check_vessel(
 
     reasons = []
 
+    # A compatibility score ranks vessels that already pass the hard
+    # constraints. It is intentionally explainable and is not an ML score.
+    capacity_ratio = cargo_quantity / vessel["capacity_tonnes"]
+    capacity_score = max(0, min(100, (1 - capacity_ratio) * 100))
+
+    draft_margin = destination_port["max_draft_m"] - vessel["draft_m"]
+    loa_margin = destination_port["max_loa_m"] - vessel["loa_m"]
+    beam_margin = destination_port["max_beam_m"] - vessel["beam_m"]
+
+    # Normalize physical margins against practical reference ranges so
+    # one dimension does not dominate the score.
+    draft_score = max(0, min(100, (draft_margin / 2.0) * 100))
+    loa_score = max(0, min(100, (loa_margin / 30.0) * 100))
+    beam_score = max(0, min(100, (beam_margin / 5.0) * 100))
+
+    type_score = 100 if vessel["vessel_type"] in destination_port["supported_vessel_types"] else 0
+    availability_score = 100 if vessel["status"].strip().upper() == "AVAILABLE" else 0
+
+    compatibility_score = round(
+        0.30 * capacity_score
+        + 0.20 * draft_score
+        + 0.15 * loa_score
+        + 0.10 * beam_score
+        + 0.15 * type_score
+        + 0.10 * availability_score,
+        1
+    )
+
     # --------------------------------------------------------
     # CAPACITY
     # --------------------------------------------------------
@@ -190,6 +218,17 @@ def check_vessel(
 
         "capacity_tonnes": vessel["capacity_tonnes"],
 
+        "compatibility_score": compatibility_score,
+
+        "score_breakdown": {
+            "capacity": round(capacity_score, 1),
+            "draft_margin": round(draft_score, 1),
+            "loa_margin": round(loa_score, 1),
+            "beam_margin": round(beam_score, 1),
+            "vessel_type": type_score,
+            "availability": availability_score
+        },
+
         "status": (
             "FEASIBLE"
             if feasible
@@ -269,12 +308,25 @@ def find_feasible_vessels(
         results.append(result)
 
     feasible_vessels = [
-
         result
         for result in results
         if result["status"] == "FEASIBLE"
-
     ]
+
+    # Highest compatibility first; non-feasible vessels remain available
+    # for transparent audit of failed constraints.
+    feasible_vessels.sort(
+        key=lambda vessel: vessel["compatibility_score"],
+        reverse=True
+    )
+
+    results.sort(
+        key=lambda vessel: (
+            vessel["status"] == "FEASIBLE",
+            vessel["compatibility_score"]
+        ),
+        reverse=True
+    )
 
     return {
 
