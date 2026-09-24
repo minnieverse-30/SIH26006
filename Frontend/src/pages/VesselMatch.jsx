@@ -85,7 +85,9 @@ function VesselMatch() {
 
   const recommendedVessel =
     feasibleVessels.length > 0
-      ? feasibleVessels[0]
+      ? [...feasibleVessels].sort(
+          (a, b) => (b.compatibility_score || 0) - (a.compatibility_score || 0)
+        )[0]
       : null;
 
   // ==============================
@@ -105,6 +107,10 @@ function VesselMatch() {
   };
 
   const getMatchScore = (vessel) => {
+    if (typeof vessel.compatibility_score === "number") {
+      return vessel.compatibility_score;
+    }
+
     const total = getTotalChecks(vessel);
 
     if (total === 0) return 0;
@@ -156,7 +162,7 @@ function VesselMatch() {
             </h1>
 
             <p className="text-sm text-slate-500">
-              AI-assisted vessel and port compatibility analysis
+              Constraint-based vessel and port compatibility analysis
             </p>
 
           </div>
