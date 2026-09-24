@@ -35,7 +35,7 @@ from app.vessel_tracking_engine import (
 
 app = FastAPI(
 
-    title="SAYLVI API",
+    title="SAYLIV API",
 
     description=(
 
@@ -90,7 +90,7 @@ def root():
 
     return {
 
-        "message": "SAYLVI API is running",
+        "message": "SAYLIV API is running",
 
         "status": "success"
 
@@ -110,7 +110,7 @@ def health_check():
 
         "status": "healthy",
 
-        "service": "SAYLVI Backend"
+        "service": "SAYLIV Backend"
 
     }
 
