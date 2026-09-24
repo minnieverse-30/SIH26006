@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import json
 
 try:
     from ml.predictor import predict_route
@@ -13,6 +14,8 @@ except Exception:
 # ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+METRICS_FILE = Path(__file__).resolve().parents[1] / "ml" / "artifacts" / "metrics.json"
 
 DATA_FILE = (
     PROJECT_ROOT
@@ -230,6 +233,22 @@ def generate_forecast(route):
     lower, upper = calculate_forecast_range(baseline, volatility)
     latest_record = route_df.iloc[-1]
 
+    historical_series = [
+        {
+            "date": row["date"].strftime("%Y-%m-%d"),
+            "rate": round(float(row["freight_rate"]), 2)
+        }
+        for _, row in route_df.iterrows()
+    ]
+
+    model_metrics = None
+    if METRICS_FILE.exists():
+        try:
+            with open(METRICS_FILE, "r", encoding="utf-8") as file:
+                model_metrics = json.load(file)
+        except (OSError, json.JSONDecodeError):
+            model_metrics = None
+
     method = "Weighted historical baseline"
     model_status = "BASELINE"
     forecast = baseline
@@ -269,6 +288,14 @@ def generate_forecast(route):
         "model_status": model_status,
         "baseline_forecast": round(baseline, 2),
         "ml_details": ml_info,
+        "historical_series": historical_series,
+        "model_metrics": model_metrics,
+        "forecast_explanation": {
+            "signal": trend,
+            "data_points": len(route_df),
+            "uncertainty": "The range reflects forecast uncertainty and recent volatility; it is not a formal prediction interval.",
+            "caution": "Confidence is based on historical coverage, and current model metrics are indicative because the prototype dataset is small."
+        },
         "note": (
             "The ML model is a prototype trained on the available historical "
             "dataset. Its validation metrics are indicative only because the "
