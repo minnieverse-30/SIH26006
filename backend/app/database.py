@@ -8,6 +8,14 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./saylvi.db")
 
+# Render and other managed PostgreSQL services may provide a generic
+# ``postgres://`` URL. Use psycopg 3 explicitly instead of relying on the
+# legacy psycopg2 driver.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+
 # SQLite needs this flag when FastAPI serves requests from multiple threads.
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
@@ -32,3 +40,4 @@ def get_db():
         db.close()
 
 from app import models
+
