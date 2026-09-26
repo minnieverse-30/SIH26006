@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -37,3 +37,20 @@ class Analysis(Base):
     risk_level = Column(String(20))
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class PoolShipment(Base):
+    __tablename__ = "pool_shipments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lot_name = Column(String(100), nullable=False)
+    route = Column(String(50), nullable=False, index=True)
+    origin = Column(String(100), nullable=False)
+    destination = Column(String(100), nullable=False)
+    cargo_type = Column(String(60), nullable=False)
+    cargo_quantity = Column(Float, nullable=False)
+    load_date = Column(Date, nullable=False, index=True)
+    pool_week = Column(Date, nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="OPEN", index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
