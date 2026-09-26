@@ -12,6 +12,8 @@ else:
     FORECAST_DEPENDENCY_ERROR = None
 from pathlib import Path
 import json
+import csv
+import statistics
 
 try:
     from ml.predictor import predict_route
@@ -239,6 +241,11 @@ def generate_forecast(route):
     Falls back to the weighted historical baseline when the ML model cannot
     be used (for example, insufficient route history).
     """
+    # In restricted Windows environments, pandas/numpy native DLLs may be
+    # blocked. The small forecast dataset can still use the baseline path.
+    if FORECAST_DEPENDENCY_ERROR is not None:
+        return _generate_standard_library_forecast(route)
+
     df = load_freight_data()
     route_df = get_route_data(df, route)
 
@@ -319,4 +326,86 @@ def generate_forecast(route):
             "baseline when ML history/model artifacts are unavailable."
         )
     }
+
+
+def _generate_standard_library_forecast(route):
+    if not DATA_FILE.exists():
+        raise FileNotFoundError(f"Processed freight dataset not found: {DATA_FILE}")
+
+    with DATA_FILE.open("r", newline="", encoding="utf-8-sig") as file:
+        rows = [
+            row for row in csv.DictReader(file)
+            if (row.get("route") or "").strip().lower() == route.lower()
+        ]
+    if not rows:
+        raise ValueError(f"No freight data found for route: {route}")
+
+    rows.sort(key=lambda row: row.get("date", ""))
+    valid_rows = []
+    for row in rows:
+        try:
+            row["freight_rate"] = float(row["freight_rate"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if row.get("date"):
+            valid_rows.append(row)
+    if not valid_rows:
+        raise ValueError(f"No valid freight observations found for route: {route}")
+
+    rates = [row["freight_rate"] for row in valid_rows]
+    weights = range(1, len(rates) + 1)
+    baseline = sum(rate * weight for rate, weight in zip(rates, weights)) / sum(weights)
+    volatility = statistics.stdev(rates) if len(rates) > 1 else 0.0
+    first_rate, last_rate = rates[0], rates[-1]
+    change = ((last_rate - first_rate) / first_rate * 100) if first_rate else None
+    if change is None or len(rates) < 2:
+        trend = "INSUFFICIENT_DATA"
+    elif change > 5:
+        trend = "RISING"
+    elif change < -5:
+        trend = "FALLING"
+    else:
+        trend = "STABLE"
+
+    observations = len(valid_rows)
+    confidence = "HIGH" if observations >= 100 else "MEDIUM" if observations >= 30 else "LOW"
+    lower, upper = calculate_forecast_range(baseline, volatility)
+    latest = valid_rows[-1]
+    metrics = None
+    if METRICS_FILE.exists():
+        try:
+            with METRICS_FILE.open("r", encoding="utf-8") as file:
+                metrics = json.load(file)
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    return {
+        "route": route, "vessel_type": latest.get("vessel_type"),
+        "latest_date": latest["date"][:10],
+        "latest_freight_rate": round(last_rate, 2),
+        "forecast_freight_rate": round(baseline, 2),
+        "forecast_range": {"lower": round(max(0.0, lower), 2), "upper": round(upper, 2)},
+        "unit": latest.get("unit"), "trend": trend,
+        "volatility": round(volatility, 2), "confidence": confidence,
+        "historical_observations": observations,
+        "method": "Weighted historical baseline", "model_status": "BASELINE",
+        "baseline_forecast": round(baseline, 2), "ml_details": None,
+        "historical_series": [
+            {"date": row["date"][:10], "rate": round(row["freight_rate"], 2)}
+            for row in valid_rows
+        ],
+        "model_metrics": metrics,
+        "forecast_explanation": {
+            "signal": trend, "data_points": observations,
+            "uncertainty": "The range reflects forecast uncertainty and recent volatility; it is not a formal prediction interval.",
+            "caution": "Confidence is based on historical coverage, and current model metrics are indicative because the prototype dataset is small."
+        },
+        "note": (
+            "The ML model is a prototype trained on the available historical dataset. "
+            "Its validation metrics are indicative only because the dataset is small. "
+            "The system falls back to the statistical baseline when ML history/model "
+            "artifacts are unavailable."
+        )
+    }
+
 
