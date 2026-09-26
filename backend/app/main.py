@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -60,19 +62,23 @@ def startup():
 
 # ============================================================
 
+frontend_origins = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_URL", "").split(",")
+    if origin.strip()
+]
+frontend_origins.extend([
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+])
+
 app.add_middleware(
 
     CORSMiddleware,
 
-    allow_origins=[
+    allow_origins=frontend_origins,
 
-        "http://localhost:5173",
-
-        "http://127.0.0.1:5173"
-
-    ],
-
-    allow_credentials=True,
+    allow_credentials=False,
 
     allow_methods=["*"],
 
@@ -743,3 +749,4 @@ def get_analysis(
             "created_at": analysis.created_at
         }
     }
+
