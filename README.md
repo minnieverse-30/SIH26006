@@ -36,6 +36,7 @@ FastAPI Backend
 - **Cost intelligence:** deterministic cost calculation with transparent cost-efficiency heuristics.
 - **Decision intelligence:** multi-factor explainable score producing BOOK / WAIT / AVOID.
 - **What-if analysis:** scenario changes to freight, fuel and operational inputs.
+- **Cargo pooling:** combine compatible lots by route, cargo type and loading week, then screen the pooled volume against current vessel constraints.
 - **Tracking:** current prototype vessel-position feed; it is not production live AIS.
 
 ## ML model
