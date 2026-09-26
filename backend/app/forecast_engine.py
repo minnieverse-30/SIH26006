@@ -1,5 +1,15 @@
-import pandas as pd
-import numpy as np
+try:
+    import pandas as pd
+    import numpy as np
+except Exception as error:
+    # Forecasting is optional for APIs such as vessel feasibility. Keeping a
+    # blocked native data-science DLL from aborting app import lets those
+    # independent endpoints remain available.
+    pd = None
+    np = None
+    FORECAST_DEPENDENCY_ERROR = error
+else:
+    FORECAST_DEPENDENCY_ERROR = None
 from pathlib import Path
 import json
 
@@ -33,6 +43,12 @@ def load_freight_data():
     """
     Load the processed freight dataset.
     """
+
+    if FORECAST_DEPENDENCY_ERROR is not None:
+        raise RuntimeError(
+            "Forecast dependencies could not be loaded: "
+            f"{FORECAST_DEPENDENCY_ERROR}"
+        ) from FORECAST_DEPENDENCY_ERROR
 
     if not DATA_FILE.exists():
         raise FileNotFoundError(

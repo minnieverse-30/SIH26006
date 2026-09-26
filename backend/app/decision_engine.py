@@ -226,7 +226,11 @@ def generate_decision(
 
         "decision": decision,
 
-        "decision_confidence": decision_confidence,\n\n        "decision_score": decision_score,\n\n        "decision_factors": decision_factors,
+        "decision_confidence": decision_confidence,
+
+        "decision_score": decision_score,
+
+        "decision_factors": decision_factors,
 
         "route": route,
 
@@ -266,7 +270,9 @@ def generate_decision(
 
             "total_expected_cost": cost["total_expected_cost"],
 
-            "expected_cost_per_tonne": cost["expected_cost_per_tonne"],\n\n            "breakdown": cost["cost_breakdown"],
+            "expected_cost_per_tonne": cost["expected_cost_per_tonne"],
+
+            "breakdown": cost["cost_breakdown"],
 
             "currency": cost["currency"]
 
