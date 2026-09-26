@@ -54,7 +54,7 @@ function VesselTracking() {
       setError("");
 
       const response = await fetch(
-        "${API_BASE_URL}/api/vessels/tracking"
+        `${API_BASE_URL}/api/vessels/tracking`
       );
 
       const result = await response.json();
