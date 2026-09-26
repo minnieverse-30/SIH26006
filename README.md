@@ -78,6 +78,12 @@ npm.cmd run dev
 Frontend:
 - `http://localhost:5173`
 
+## Deploy on Render
+
+The repository includes a Render Blueprint at [`render.yaml`](render.yaml). To deploy it, connect this GitHub repository in Render and create a new Blueprint from the repository. Render will build the FastAPI backend and Vite frontend, connect them, and create a PostgreSQL database.
+
+The Blueprint uses Render's free plans for a demo. Free web services can sleep when idle, and free PostgreSQL databases expire 30 days after creation. Upgrade the database to a paid plan before that deadline to keep saved analyses; Render's current smallest paid PostgreSQL plan is listed on its [pricing page](https://render.com/pricing). See Render's [free instance limitations](https://render.com/docs/free).
+
 ## Demo flow
 
 1. Open **New Analysis**.
@@ -104,3 +110,4 @@ The current implementation does **not** claim:
 ## Development checks
 
 The frontend includes Vite build/lint scripts. GitHub Actions can be used to automatically build and test repository changes; workflow definitions live under `.github/workflows`.
+
