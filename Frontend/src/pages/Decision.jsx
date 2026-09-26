@@ -9,7 +9,6 @@ import {
   FiDollarSign,
   FiLoader,
   FiShield,
-  FiTrendingDown,
   FiTrendingUp,
   FiXCircle,
 } from "react-icons/fi";
@@ -26,7 +25,7 @@ function Decision() {
     fetchDecision();
   }, []);
 
-  const fetchDecision = async () => {
+  async function fetchDecision() {
     try {
       setLoading(true);
       setError("");
@@ -100,7 +99,7 @@ function Decision() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   if (loading) {
     return (
