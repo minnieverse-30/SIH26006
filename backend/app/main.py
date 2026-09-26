@@ -1,10 +1,12 @@
 import os
+from datetime import date, timedelta
 
 from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Analysis
+from app.models import Analysis, PoolShipment
 from app.database import Base, engine
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -67,10 +69,7 @@ frontend_origins = [
     for origin in os.getenv("FRONTEND_URL", "").split(",")
     if origin.strip()
 ]
-frontend_origins.extend([
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-])
+frontend_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
 
 app.add_middleware(
 
@@ -85,6 +84,114 @@ app.add_middleware(
     allow_headers=["*"],
 
 )
+
+
+class PoolShipmentCreate(BaseModel):
+    lot_name: str = Field(min_length=2, max_length=100)
+    route: str
+    cargo_type: str = Field(min_length=2, max_length=60)
+    cargo_quantity: float = Field(gt=0, le=300000)
+    load_date: date
+
+
+POOL_LANES = {
+    "AUS-PAR": ("Australia", "Paradip"),
+    "IDN-PAR": ("Indonesia", "Paradip"),
+}
+
+
+def _cargo_pool_summary(db: Session):
+    shipments = (
+        db.query(PoolShipment)
+        .filter(PoolShipment.status == "OPEN", PoolShipment.load_date >= date.today())
+        .order_by(PoolShipment.load_date, PoolShipment.id)
+        .all()
+    )
+    groups = {}
+    for shipment in shipments:
+        key = (shipment.route, shipment.cargo_type, shipment.pool_week)
+        groups.setdefault(key, []).append(shipment)
+
+    summaries = []
+    for (route, cargo_type, pool_week), lots in groups.items():
+        total_tonnes = sum(lot.cargo_quantity for lot in lots)
+        origin, destination = lots[0].origin, lots[0].destination
+        try:
+            screening = find_feasible_vessels(total_tonnes, origin, destination)
+            feasible_vessels = screening["vessels"]
+            screening_error = None
+        except (ValueError, FileNotFoundError) as error:
+            feasible_vessels = []
+            screening_error = str(error)
+
+        summaries.append({
+            "pool_key": f"{route}:{cargo_type}:{pool_week.isoformat()}",
+            "route": route,
+            "origin": origin,
+            "destination": destination,
+            "cargo_type": cargo_type,
+            "pool_week": pool_week.isoformat(),
+            "load_date_from": min(lot.load_date for lot in lots).isoformat(),
+            "load_date_to": max(lot.load_date for lot in lots).isoformat(),
+            "shipment_count": len(lots),
+            "total_cargo_tonnes": round(total_tonnes, 2),
+            "feasible_vessel_count": len(feasible_vessels),
+            "feasible_vessels": [
+                {"name": vessel["vessel_name"], "capacity_tonnes": vessel["capacity_tonnes"]}
+                for vessel in feasible_vessels
+            ],
+            "screening_error": screening_error,
+            "shipments": [
+                {
+                    "id": lot.id,
+                    "lot_name": lot.lot_name,
+                    "cargo_quantity_tonnes": lot.cargo_quantity,
+                    "load_date": lot.load_date.isoformat(),
+                }
+                for lot in lots
+            ],
+        })
+    return summaries
+
+
+@app.get("/api/pools")
+def list_cargo_pools(db: Session = Depends(get_db)):
+    return {"status": "success", "data": _cargo_pool_summary(db)}
+
+
+@app.post("/api/pools/shipments")
+def add_pool_shipment(payload: PoolShipmentCreate, db: Session = Depends(get_db)):
+    lane = POOL_LANES.get(payload.route)
+    if lane is None:
+        raise HTTPException(status_code=400, detail="Choose a supported pooling route.")
+    if payload.load_date < date.today():
+        raise HTTPException(status_code=400, detail="Load date must be today or later.")
+
+    origin, destination = lane
+    pool_week = payload.load_date - timedelta(days=payload.load_date.weekday())
+    shipment = PoolShipment(
+        lot_name=payload.lot_name.strip(),
+        route=payload.route,
+        origin=origin,
+        destination=destination,
+        cargo_type=payload.cargo_type.strip(),
+        cargo_quantity=payload.cargo_quantity,
+        load_date=payload.load_date,
+        pool_week=pool_week,
+    )
+    try:
+        db.add(shipment)
+        db.commit()
+        db.refresh(shipment)
+        return {
+            "status": "success",
+            "message": "Cargo lot added to the shared pool.",
+            "shipment_id": shipment.id,
+            "pool_key": f"{payload.route}:{payload.cargo_type.strip()}:{pool_week.isoformat()}",
+        }
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Unable to add cargo lot to the pool.")
 
 # ============================================================
 
