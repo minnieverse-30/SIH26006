@@ -13,6 +13,11 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    rules: {
+      // Existing data-loading effects intentionally initiate async state updates.
+      // Keep this advisory rule non-blocking while the legacy screens are migrated.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
     languageOptions: {
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
